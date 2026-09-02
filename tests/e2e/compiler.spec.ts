@@ -9,6 +9,7 @@ test("Siglum compiles the rendered resume and canonical main.tex in Chromium", a
   await page.waitForURL("**/workspace");
   await page.getByRole("button", { name: "Compile locally" }).click();
   await expect(page.getByRole("button", { name: "Download PDF" })).toBeEnabled({ timeout: 150_000 });
+  await expect(page.getByText(/LaTeX compilation failed/i)).toHaveCount(0);
   const mainTex = await readFile(resolve(process.cwd(), "main.tex"), "utf8");
   await page.getByRole("button", { name: "LaTeX Source" }).click();
   const editor = page.locator(".monaco-editor").first();
@@ -20,7 +21,7 @@ test("Siglum compiles the rendered resume and canonical main.tex in Chromium", a
   await recompile.click();
   await expect(page.getByText("PREVIEW STALE")).toHaveCount(0, { timeout: 150_000 });
   await page.waitForTimeout(1_000);
-  const header = await page.evaluate(async () => {
+  const pdfInfo = await page.evaluate(async () => {
     const database = await new Promise<IDBDatabase>((resolve, reject) => {
       const request = indexedDB.open("ai-resume-builder");
       request.onsuccess = () => resolve(request.result);
@@ -31,8 +32,13 @@ test("Siglum compiles the rendered resume and canonical main.tex in Chromium", a
       request.onsuccess = () => resolve(request.result);
       request.onerror = () => reject(request.error);
     });
-    const bytes = new Uint8Array(await record.pdfBlob!.slice(0, 5).arrayBuffer());
-    return new TextDecoder().decode(bytes);
+    const bytes = new Uint8Array(await record.pdfBlob!.arrayBuffer());
+    const text = new TextDecoder("latin1").decode(bytes);
+    return {
+      header: text.slice(0, 5),
+      size: bytes.byteLength,
+    };
   });
-  expect(header).toBe("%PDF-");
+  expect(pdfInfo.header).toBe("%PDF-");
+  expect(pdfInfo.size).toBeGreaterThan(5_000);
 });

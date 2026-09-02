@@ -2,6 +2,7 @@ import { openDB, type DBSchema } from "idb";
 import { WorkspaceSchema, type PersistedWorkspaceRecord, type Workspace } from "@/features/workspace/schema";
 import { ResumeSchema } from "@/features/resume/schema";
 import { renderResumeToLatex } from "@/features/latex/renderer";
+import { DEFAULT_PRESENTATION } from "@/features/presentation/schema";
 import { createId } from "@/lib/utils";
 
 interface ResumeBuilderDB extends DBSchema {
@@ -42,28 +43,32 @@ export function migrateWorkspace(value: unknown): Workspace {
   if (current.success) return current.data;
   if (!value || typeof value !== "object") throw new Error("The locally saved workspace is corrupt.");
   const legacy = value as Record<string, unknown>;
-  if (legacy.version !== undefined && legacy.version !== 0) throw new Error("The locally saved workspace uses an unsupported version.");
+  if (legacy.version !== undefined && legacy.version !== 0 && legacy.version !== 1 && legacy.version !== 2) throw new Error("The locally saved workspace uses an unsupported version.");
   const resume = ResumeSchema.safeParse(legacy.resume);
   if (!resume.success) throw new Error("The locally saved workspace is corrupt.");
   const originalResume = ResumeSchema.safeParse(legacy.originalResume);
   return WorkspaceSchema.parse({
-    version: 1,
+    version: 3,
     id: typeof legacy.id === "string" ? legacy.id : createId("workspace"),
     name: typeof legacy.name === "string" ? legacy.name : "Recovered resume",
     resume: resume.data,
     originalResume: originalResume.success ? originalResume.data : resume.data,
     originalLatex: typeof legacy.originalLatex === "string" ? legacy.originalLatex : null,
-    generatedLatex: typeof legacy.generatedLatex === "string" ? legacy.generatedLatex : renderResumeToLatex(resume.data),
+    generatedLatex: renderResumeToLatex(resume.data, DEFAULT_PRESENTATION),
     manualLatex: typeof legacy.manualLatex === "string" ? legacy.manualLatex : null,
     manualLatexStale: Boolean(legacy.manualLatexStale),
+    compilerFiles: Array.isArray(legacy.compilerFiles) ? legacy.compilerFiles : [],
+    presentation: DEFAULT_PRESENTATION,
+    guidanceContext: null,
     targetJob: legacy.targetJob ?? null,
     jobAnalysis: legacy.jobAnalysis ?? null,
     jobComparison: legacy.jobComparison ?? null,
-    tailoringChanges: Array.isArray(legacy.tailoringChanges) ? legacy.tailoringChanges : [],
+    tailoringChanges: [],
     unsupportedGaps: Array.isArray(legacy.unsupportedGaps) ? legacy.unsupportedGaps : [],
-    proofreadingChanges: Array.isArray(legacy.proofreadingChanges) ? legacy.proofreadingChanges : [],
+    proofreadingChanges: [],
     resumeRevision: typeof legacy.resumeRevision === "string" ? legacy.resumeRevision : createId("revision"),
     lastCompiledSourceHash: typeof legacy.lastCompiledSourceHash === "string" ? legacy.lastCompiledSourceHash : null,
+    lastCompiledPageCount: typeof legacy.lastCompiledPageCount === "number" ? legacy.lastCompiledPageCount : null,
     updatedAt: typeof legacy.updatedAt === "string" ? legacy.updatedAt : new Date().toISOString(),
   });
 }

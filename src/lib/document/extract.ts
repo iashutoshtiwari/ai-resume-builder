@@ -1,5 +1,3 @@
-// src/lib/document/extract.ts
-
 export type SupportedFormat = "pdf" | "docx" | "latex" | "text";
 
 export interface ExtractedDocument {
@@ -12,11 +10,11 @@ export interface ExtractedDocument {
 /**
  * Extract plain text from a PDF ArrayBuffer / Uint8Array using pdfjs-dist.
  */
-export async function extractTextFromPdf(data: ArrayBuffer | Uint8Array): Promise<{ text: string; pages: number }> {
+async function extractTextFromPdf(data: ArrayBuffer | Uint8Array): Promise<{ text: string; pages: number }> {
   const pdfjs = await import("pdfjs-dist");
   
   if (typeof window !== "undefined" && !pdfjs.GlobalWorkerOptions.workerSrc) {
-    pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+    pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
   }
 
   const typedArray = data instanceof Uint8Array ? data : new Uint8Array(data);
@@ -64,7 +62,7 @@ export async function extractTextFromPdf(data: ArrayBuffer | Uint8Array): Promis
 /**
  * Extract raw text from a DOCX ArrayBuffer using mammoth.
  */
-export async function extractTextFromDocx(data: ArrayBuffer | Uint8Array): Promise<string> {
+async function extractTextFromDocx(data: ArrayBuffer | Uint8Array): Promise<string> {
   const mammoth = (await import("mammoth")) as unknown as {
     extractRawText: (input: { arrayBuffer: ArrayBuffer }) => Promise<{ value: string; messages: unknown[] }>;
   };
@@ -92,7 +90,11 @@ export async function extractTextFromFile(file: File): Promise<ExtractedDocument
     };
   }
 
-  if (extension === "docx" || extension === "doc") {
+  if (extension === "doc") {
+    throw new Error("Legacy .doc files are not supported. Open the file in Word and save it as .docx first.");
+  }
+
+  if (extension === "docx") {
     const buffer = await file.arrayBuffer();
     const text = await extractTextFromDocx(buffer);
     return {
@@ -111,10 +113,14 @@ export async function extractTextFromFile(file: File): Promise<ExtractedDocument
     };
   }
 
-  const text = await file.text();
-  return {
-    text,
-    format: "text",
-    filename,
-  };
+  if (extension === "txt" || file.type === "text/plain" || extension === "") {
+    const text = await file.text();
+    return {
+      text,
+      format: "text",
+      filename,
+    };
+  }
+
+  throw new Error("Unsupported resume format. Upload PDF, DOCX, LaTeX, or plain text.");
 }

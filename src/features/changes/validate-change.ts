@@ -1,6 +1,7 @@
 import type { JobAnalysis } from "@/features/jobs/schema";
 import type { Resume } from "@/features/resume/schema";
 import type { EvidenceReference, ResumeChange } from "@/features/changes/schema";
+import type { GuidanceContext } from "@/features/guidance/schema";
 import { readTargetText } from "@/features/changes/apply-change";
 
 export type ChangeValidation = { valid: true } | { valid: false; code: string; message: string };
@@ -39,12 +40,19 @@ function numericClaims(value: string): string[] {
   return value.match(/(?:\$?\d[\d,.]*\s?(?:%|x|k|m|b|million|billion|users?)?)/gi) ?? [];
 }
 
-export function validateChangeAgainstResume(change: ResumeChange, resume: Resume, analysis?: JobAnalysis): ChangeValidation {
+export function validateChangeAgainstResume(change: ResumeChange, resume: Resume, analysis?: JobAnalysis, guidance?: GuidanceContext): ChangeValidation {
   for (const evidence of change.evidence) {
     const resolved = resolveEvidence(resume, evidence);
     if (!resolved) return { valid: false, code: "bad-evidence", message: "A cited resume item does not exist." };
     if (evidence.quote && !normalize(resolved).includes(normalize(evidence.quote))) {
       return { valid: false, code: "bad-evidence-quote", message: "An evidence quote does not match the cited resume item." };
+    }
+  }
+
+  if (guidance) {
+    const validRuleIds = new Set(guidance.chunks.map((chunk) => chunk.id));
+    if (change.guidanceRuleIds.some((id) => !validRuleIds.has(id))) {
+      return { valid: false, code: "unknown-guidance-id", message: "A proposed change cites an unknown guidance rule ID." };
     }
   }
 
@@ -72,7 +80,7 @@ export function validateChangeAgainstResume(change: ResumeChange, resume: Resume
   return { valid: true };
 }
 
-export function filterValidChanges(changes: ResumeChange[], resume: Resume, analysis?: JobAnalysis) {
+export function filterValidChanges(changes: ResumeChange[], resume: Resume, analysis?: JobAnalysis, guidance?: GuidanceContext) {
   const targets = new Set<string>();
   const valid: ResumeChange[] = [];
   const rejected: Array<{ id: string; code: string; message: string }> = [];
@@ -82,7 +90,7 @@ export function filterValidChanges(changes: ResumeChange[], resume: Resume, anal
       rejected.push({ id: change.id, code: "duplicate-target", message: "Multiple suggestions target the same resume item." });
       continue;
     }
-    const result = validateChangeAgainstResume(change, resume, analysis);
+    const result = validateChangeAgainstResume(change, resume, analysis, guidance);
     if (!result.valid) rejected.push({ id: change.id, code: result.code, message: result.message });
     else {
       targets.add(key);

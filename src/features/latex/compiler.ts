@@ -1,3 +1,5 @@
+import { loadLatexPackageFiles } from "@/features/latex/packages";
+
 export type CompilerFile = { name: string; content: string | Uint8Array };
 export type NormalizedCompilerError = {
   code: "unsupported-browser" | "unsupported-package" | "memory" | "latex" | "runtime";
@@ -13,15 +15,6 @@ export interface LatexCompiler {
   compile(input: { source: string; files?: CompilerFile[] }): Promise<LatexCompileResult>;
   unload(): void;
 }
-
-const SUPPORTED_PACKAGE_FILES: Record<string, string> = {
-  // Siglum's v0.1 bundle omits XCharter. The canonical template explicitly
-  // allows Computer Modern as its fallback, so this compatibility package
-  // preserves compilation without enabling network CTAN fetching.
-  "XCharter.sty": "\\NeedsTeXFormat{LaTeX2e}\n\\ProvidesPackage{XCharter}[2026/09/02 local compatibility fallback]\n\\endinput\n",
-  "enumitem.sty": "\\NeedsTeXFormat{LaTeX2e}\n\\ProvidesPackage{enumitem}[2026/09/02 local compatibility fallback]\n\\newcommand{\\setlist}[2][]{ }\n\\endinput\n",
-  "titlesec.sty": "\\NeedsTeXFormat{LaTeX2e}\n\\ProvidesPackage{titlesec}[2026/09/02 local compatibility fallback]\n\\makeatletter\n\\newcommand{\\titleformat}[5]{\\@ifnextchar[{\\titleformat@optional}{}}\n\\def\\titleformat@optional[#1]{}\n\\makeatother\n\\endinput\n",
-};
 
 function normalizeError(message: string, logs: string): NormalizedCompilerError {
   const line = Number(logs.match(/(?:l\.|line\s+)(\d+)/i)?.[1]) || undefined;
@@ -46,12 +39,14 @@ export class SiglumLatexCompiler implements LatexCompiler {
           bundlesUrl: "https://cdn.siglum.org/tl2025/bundles",
           wasmUrl: "https://cdn.siglum.org/tl2025/busytex.wasm",
           jsUrl: "https://cdn.siglum.org/tl2025/busytex.js",
+          ctanProxyUrl: window.location.origin,
+          xzwasmUrl: "/xzwasm.min.js",
           workerUrl: "/siglum-worker.js",
-          enableCtan: false,
+          enableCtan: true,
           enableLazyFS: true,
           enableDocCache: true,
-          maxRetries: 4,
-          verbose: true,
+          maxRetries: 8,
+          verbose: false,
           onLog: (message) => {
             this.logs.push(message);
             if (this.logs.length > 1_500) this.logs.splice(0, this.logs.length - 1_500);
@@ -60,8 +55,10 @@ export class SiglumLatexCompiler implements LatexCompiler {
       }
       this.logs = [];
       if (!this.compiler.isReady()) await this.compiler.init();
-      const additionalFiles = { ...SUPPORTED_PACKAGE_FILES, ...Object.fromEntries(files.map((file) => [file.name, file.content])) };
+      const packageFiles = await loadLatexPackageFiles();
+      const additionalFiles = { ...packageFiles, ...Object.fromEntries(files.map((file) => [file.name, file.content])) };
       const result = await this.compiler.compile(source, { engine: "pdflatex", additionalFiles, useCache: true });
+
       const logs = result.log || this.logs.join("\n");
       if (result.success && result.pdf) {
         const bytes = new Uint8Array(result.pdf);

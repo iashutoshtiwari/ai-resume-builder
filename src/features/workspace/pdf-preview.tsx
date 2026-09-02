@@ -8,10 +8,11 @@ import { ChevronLeft, ChevronRight, Download, FileWarning, Maximize2, Minus, Plu
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { SiglumLatexCompiler } from "@/features/latex/compiler";
-import { hashText, sanitizeFilename } from "@/lib/utils";
+import { hashCompileInput } from "@/features/latex/source-hash";
+import { sanitizeFilename } from "@/lib/utils";
 import { useWorkspaceStore } from "@/store/workspace-store";
 
-pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
 const compiler = new SiglumLatexCompiler();
 
 function downloadBlob(blob: Blob, filename: string) {
@@ -32,6 +33,7 @@ export function PdfPreview({ compact = false }: { compact?: boolean }) {
   const setPending = useWorkspaceStore((state) => state.setCompilePending);
   const setSuccess = useWorkspaceStore((state) => state.setCompileSuccess);
   const setFailure = useWorkspaceStore((state) => state.setCompileFailure);
+  const setCompiledPageCount = useWorkspaceStore((state) => state.setCompiledPageCount);
   const source = workspace.manualLatex ?? workspace.generatedLatex;
   const [sourceHash, setSourceHash] = useState<string | null>(null);
   const [pages, setPages] = useState(0);
@@ -39,13 +41,16 @@ export function PdfPreview({ compact = false }: { compact?: boolean }) {
   const [zoom, setZoom] = useState(0.82);
   const viewportRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => { let alive = true; void hashText(source).then((value: string) => alive && setSourceHash(value)); return () => { alive = false; }; }, [source]);
-  const stale = Boolean(workspace.lastCompiledSourceHash && sourceHash && workspace.lastCompiledSourceHash !== sourceHash);
+  useEffect(() => { let alive = true; void hashCompileInput(source, workspace.compilerFiles).then((value) => alive && setSourceHash(value)); return () => { alive = false; }; }, [source, workspace.compilerFiles]);
+  const stale = Boolean(pdfBlob && sourceHash && workspace.lastCompiledSourceHash !== sourceHash);
 
   async function compile() {
     setPending();
-    const hash = await hashText(source);
-    const result = await compiler.compile({ source });
+    const hash = await hashCompileInput(source, workspace.compilerFiles);
+    const result = await compiler.compile({
+      source,
+      files: workspace.compilerFiles.map((file) => ({ name: file.name, content: file.content })),
+    });
     if (result.success) { setSuccess(result.pdf, hash, result.logs); toast.success(result.cached ? "Loaded compiled PDF from browser cache" : "PDF compiled locally"); }
     else { const message = result.errors[0]?.message ?? "Compilation failed."; setFailure(message, result.logs); toast.error(message); }
   }
@@ -56,9 +61,25 @@ export function PdfPreview({ compact = false }: { compact?: boolean }) {
   return <section className={`flex h-full min-h-0 flex-col bg-[#d8dad7] text-zinc-950 ${compact ? "min-h-[680px]" : ""}`}>
     <div className="flex h-14 shrink-0 items-center justify-between border-b border-black/15 bg-[#eeeeeb] px-3"><div className="flex items-center gap-2"><Button size="sm" className="bg-zinc-950 text-white hover:bg-zinc-800" disabled={compileStatus === "compiling"} onClick={() => void compile()}>{compileStatus === "compiling" ? <RefreshCw className="animate-spin" /> : <RefreshCw />} {pdfBlob ? "Recompile" : "Compile"}</Button>{stale && <span className="font-mono text-[10px] text-amber-800">PREVIEW STALE</span>}</div>{controls}<div className="flex gap-1"><Button size="icon" variant="ghost" disabled={!pdfBlob} onClick={() => pdfBlob && downloadBlob(pdfBlob, `${filename}.pdf`)} aria-label="Download PDF"><Download /></Button><Button size="icon" variant="ghost" onClick={() => downloadBlob(new Blob([source], { type: "application/x-tex" }), `${filename}.tex`)} aria-label="Download LaTeX"><span className="font-mono text-[9px]">TEX</span></Button></div></div>
     <div ref={viewportRef} className="min-h-0 flex-1 overflow-auto p-5">
-      {pdfBlob ? <BlobPdf key={workspace.lastCompiledSourceHash ?? "saved-pdf"} blob={pdfBlob} page={page} zoom={zoom} onLoaded={(numPages) => { setPages(numPages); setPage((current) => Math.min(current, numPages)); }} /> : <div className="mx-auto grid aspect-[8.5/11] w-full max-w-[610px] place-items-center border border-black/10 bg-white shadow-xl shadow-black/10"><div className="max-w-xs text-center"><FileWarning className="mx-auto size-6 text-zinc-400" /><p className="mt-3 text-sm font-medium">No compiled preview yet</p><p className="mt-1 text-xs leading-5 text-zinc-500">Compilation runs only when you request it. The first local compile downloads the browser engine bundle.</p><Button className="mt-5 bg-zinc-950 text-white hover:bg-zinc-800" onClick={() => void compile()} disabled={compileStatus === "compiling"}>{compileStatus === "compiling" ? "Starting compiler…" : "Compile locally"}</Button></div></div>}
+      {pdfBlob ? <BlobPdf key={workspace.lastCompiledSourceHash ?? "saved-pdf"} blob={pdfBlob} page={page} zoom={zoom} onLoaded={(numPages) => { setPages(numPages); setPage((current) => Math.min(current, numPages)); setCompiledPageCount(numPages); }} /> : <div className="mx-auto grid aspect-[8.5/11] w-full max-w-[610px] place-items-center border border-black/10 bg-white shadow-xl shadow-black/10"><div className="max-w-xs text-center"><FileWarning className="mx-auto size-6 text-zinc-400" /><p className="mt-3 text-sm font-medium">No compiled preview yet</p><p className="mt-1 text-xs leading-5 text-zinc-500">Compilation runs only when you request it. The first local compile downloads the browser engine bundle.</p><Button className="mt-5 bg-zinc-950 text-white hover:bg-zinc-800" onClick={() => void compile()} disabled={compileStatus === "compiling"}>{compileStatus === "compiling" ? "Starting compiler…" : "Compile locally"}</Button></div></div>}
     </div>
-    {(pages > 1 || compileError) && <div className="shrink-0 border-t border-black/15 bg-[#eeeeeb] px-3 py-2">{pages > 1 && <div className="flex items-center justify-center gap-2"><Button size="icon" variant="ghost" disabled={page <= 1} onClick={() => setPage((value) => value - 1)} aria-label="Previous page"><ChevronLeft /></Button><span className="font-mono text-[10px]">{page} / {pages}</span><Button size="icon" variant="ghost" disabled={page >= pages} onClick={() => setPage((value) => value + 1)} aria-label="Next page"><ChevronRight /></Button></div>}{compileError && <details className="text-xs text-red-800"><summary className="cursor-pointer font-medium">Compile failed — last successful preview preserved</summary><p className="mt-2">{compileError}</p>{compileLogs && <pre className="mt-2 max-h-28 overflow-auto whitespace-pre-wrap font-mono text-[10px]">{compileLogs.slice(-5000)}</pre>}</details>}</div>}
+    {(pages > 1 || compileError) && (
+      <div className="shrink-0 border-t border-black/15 bg-[#eeeeeb] px-3 py-2 space-y-2">
+        {pages > 1 && (
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center justify-center gap-2">
+              <Button size="icon" variant="ghost" disabled={page <= 1} onClick={() => setPage((value) => value - 1)} aria-label="Previous page"><ChevronLeft /></Button>
+              <span className="font-mono text-[10px]">{page} / {pages}</span>
+              <Button size="icon" variant="ghost" disabled={page >= pages} onClick={() => setPage((value) => value + 1)} aria-label="Next page"><ChevronRight /></Button>
+            </div>
+            <div className="rounded border border-amber-300/80 bg-amber-50 px-2.5 py-1.5 text-[11px] leading-4 text-amber-900">
+              <span className="font-semibold">Multi-page resume ({pages} pages):</span> The EngineeringResumes guide recommends 1 page for most early- and mid-career engineers. A second page may be justified for candidates with roughly 10+ years of relevant experience or senior scope. PDF export remains fully available.
+            </div>
+          </div>
+        )}
+        {compileError && <details className="text-xs text-red-800"><summary className="cursor-pointer font-medium">Compile failed — last successful preview preserved</summary><p className="mt-2">{compileError}</p>{compileLogs && <pre className="mt-2 max-h-28 overflow-auto whitespace-pre-wrap font-mono text-[10px]">{compileLogs.slice(-5000)}</pre>}</details>}
+      </div>
+    )}
   </section>;
 }
 

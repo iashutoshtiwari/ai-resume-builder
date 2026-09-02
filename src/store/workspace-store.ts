@@ -6,12 +6,14 @@ import { validateChangeAgainstResume } from "@/features/changes/validate-change"
 import type { ProofreadingChange, ResumeChange, UnsupportedGap } from "@/features/changes/schema";
 import type { JobAnalysis, JobComparison, TargetJob } from "@/features/jobs/schema";
 import { renderResumeToLatex } from "@/features/latex/renderer";
+import { DEFAULT_PRESENTATION, type ResumePresentation } from "@/features/presentation/schema";
 import type { Resume } from "@/features/resume/schema";
 import type { Workspace } from "@/features/workspace/schema";
+import type { LatexProjectFile } from "@/features/workspace/schema";
 import { clearWorkspace, loadWorkspace, saveWorkspace } from "@/lib/storage/workspace-db";
 import { createId, hashText } from "@/lib/utils";
 
-export type WorkspacePanel = "overview" | "experience" | "projects" | "skills" | "education" | "job" | "changes" | "proofread" | "latex";
+export type WorkspacePanel = "overview" | "experience" | "projects" | "skills" | "education" | "format" | "guidance" | "job" | "changes" | "proofread" | "latex";
 type SaveStatus = "idle" | "saving" | "saved" | "error" | "corrupt";
 
 type WorkspaceStore = {
@@ -43,8 +45,12 @@ type WorkspaceStore = {
   rejectRemaining: () => void;
   setManualLatex: (source: string | null) => void;
   resetManualLatex: () => void;
+  setPresentation: (presentation: ResumePresentation) => void;
+  addCompilerFiles: (files: LatexProjectFile[]) => void;
+  removeCompilerFile: (id: string) => void;
   setCompilePending: () => void;
   setCompileSuccess: (pdf: Blob, sourceHash: string, logs: string) => void;
+  setCompiledPageCount: (pageCount: number) => void;
   setCompileFailure: (message: string, logs: string) => void;
   resetWorkspace: () => Promise<void>;
 };
@@ -57,12 +63,14 @@ function withResume(workspace: Workspace, resume: Resume): Workspace {
   return {
     ...workspace,
     resume,
-    generatedLatex: renderResumeToLatex(resume),
+    generatedLatex: renderResumeToLatex(resume, workspace.presentation),
     manualLatexStale: workspace.manualLatex !== null,
     resumeRevision: nextRevision(),
     updatedAt: new Date().toISOString(),
   };
 }
+
+let hydrationPromise: Promise<void> | null = null;
 
 export const useWorkspaceStore = create<WorkspaceStore>((set, get) => ({
   workspace: null,
@@ -78,18 +86,29 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => ({
 
   hydrate: async () => {
     if (get().hydrated) return;
-    try {
-      const record = await loadWorkspace();
-      set({ workspace: record?.workspace ?? null, pdfBlob: record?.pdfBlob ?? null, hydrated: true, saveStatus: record ? "saved" : "idle" });
-    } catch {
-      set({ hydrated: true, saveStatus: "corrupt" });
-    }
+    if (hydrationPromise) return hydrationPromise;
+    hydrationPromise = (async () => {
+      try {
+        const record = await loadWorkspace();
+        if (get().workspace) {
+          set({ hydrated: true });
+          return;
+        }
+        set({ workspace: record?.workspace ?? null, pdfBlob: record?.pdfBlob ?? null, hydrated: true, saveStatus: record ? "saved" : "idle" });
+      } catch {
+        if (!get().workspace) set({ hydrated: true, saveStatus: "corrupt" });
+      } finally {
+        hydrationPromise = null;
+      }
+    })();
+    return hydrationPromise;
   },
   startWorkspace: async (resume, originalLatex, name = "Primary resume") => {
-    const generatedLatex = renderResumeToLatex(resume);
+    const presentation = DEFAULT_PRESENTATION;
+    const generatedLatex = renderResumeToLatex(resume, presentation);
     const revision = await hashText(JSON.stringify(resume));
     const workspace: Workspace = {
-      version: 1,
+      version: 3,
       id: createId("workspace"),
       name,
       resume,
@@ -98,6 +117,9 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => ({
       generatedLatex,
       manualLatex: null,
       manualLatexStale: false,
+      compilerFiles: [],
+      presentation,
+      guidanceContext: null,
       targetJob: null,
       jobAnalysis: null,
       jobComparison: null,
@@ -106,9 +128,10 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => ({
       proofreadingChanges: [],
       resumeRevision: revision,
       lastCompiledSourceHash: null,
+      lastCompiledPageCount: null,
       updatedAt: new Date().toISOString(),
     };
-    set({ workspace, pdfBlob: null, past: [], future: [], panel: "overview", saveStatus: "saving" });
+    set({ workspace, pdfBlob: null, past: [], future: [], panel: "overview", hydrated: true, saveStatus: "saving" });
   },
   updateResume: (updater) => set((state) => {
     if (!state.workspace) return state;
@@ -183,8 +206,37 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => ({
   rejectRemaining: () => set((state) => state.workspace ? { workspace: { ...state.workspace, tailoringChanges: state.workspace.tailoringChanges.map((change) => change.status === "pending" ? { ...change, status: "rejected" as const } : change), updatedAt: new Date().toISOString() }, saveStatus: "saving" } : state),
   setManualLatex: (manualLatex) => set((state) => state.workspace ? { workspace: { ...state.workspace, manualLatex, manualLatexStale: false, updatedAt: new Date().toISOString() }, saveStatus: "saving" } : state),
   resetManualLatex: () => set((state) => state.workspace ? { workspace: { ...state.workspace, manualLatex: null, manualLatexStale: false, updatedAt: new Date().toISOString() }, saveStatus: "saving" } : state),
+  setPresentation: (presentation) => set((state) => {
+    if (!state.workspace) return state;
+    return {
+      workspace: {
+        ...state.workspace,
+        presentation,
+        generatedLatex: renderResumeToLatex(state.workspace.resume, presentation),
+        manualLatexStale: state.workspace.manualLatex !== null,
+        lastCompiledSourceHash: null,
+        lastCompiledPageCount: null,
+        updatedAt: new Date().toISOString(),
+      },
+      saveStatus: "saving",
+    };
+  }),
+  addCompilerFiles: (files) => set((state) => {
+    if (!state.workspace) return state;
+    const incomingNames = new Set(files.map((file) => file.name.toLowerCase()));
+    const existing = state.workspace.compilerFiles.filter((file) => !incomingNames.has(file.name.toLowerCase()));
+    return {
+      workspace: { ...state.workspace, compilerFiles: [...existing, ...files].slice(-40), lastCompiledSourceHash: null, updatedAt: new Date().toISOString() },
+      saveStatus: "saving",
+    };
+  }),
+  removeCompilerFile: (id) => set((state) => state.workspace ? {
+    workspace: { ...state.workspace, compilerFiles: state.workspace.compilerFiles.filter((file) => file.id !== id), lastCompiledSourceHash: null, updatedAt: new Date().toISOString() },
+    saveStatus: "saving",
+  } : state),
   setCompilePending: () => set({ compileStatus: "compiling", compileError: null, compileLogs: "" }),
-  setCompileSuccess: (pdfBlob, lastCompiledSourceHash, compileLogs) => set((state) => state.workspace ? { pdfBlob, compileStatus: "success", compileLogs, compileError: null, workspace: { ...state.workspace, lastCompiledSourceHash, updatedAt: new Date().toISOString() }, saveStatus: "saving" } : state),
+  setCompileSuccess: (pdfBlob, lastCompiledSourceHash, compileLogs) => set((state) => state.workspace ? { pdfBlob, compileStatus: "success", compileLogs, compileError: null, workspace: { ...state.workspace, lastCompiledSourceHash, lastCompiledPageCount: null, updatedAt: new Date().toISOString() }, saveStatus: "saving" } : state),
+  setCompiledPageCount: (lastCompiledPageCount) => set((state) => state.workspace ? { workspace: { ...state.workspace, lastCompiledPageCount, updatedAt: new Date().toISOString() }, saveStatus: "saving" } : state),
   setCompileFailure: (compileError, compileLogs) => set({ compileStatus: "error", compileError, compileLogs }),
   resetWorkspace: async () => {
     await clearWorkspace();

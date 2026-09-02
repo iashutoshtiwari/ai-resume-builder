@@ -10,11 +10,19 @@ cp .env.example .env.local
 pnpm dev
 ```
 
-Open `http://localhost:3000`. AI features require a Google AI Studio key; import, editing, rendering, compilation, and export do not.
+Open `http://localhost:3000`. PDF, DOCX, and plain-text structuring plus tailoring require an AI key from either Google AI Studio (Free tier supported) or OpenRouter. Known-template LaTeX import, editing, rendering, compilation, formatting presets, guidance audits, and export remain usable without AI.
 
 ```dotenv
+# Provider: 'google' (default) or 'openrouter'
+AI_PROVIDER=google
+
+# Google AI Studio
 GEMINI_API_KEY=
 GEMINI_MODEL=gemini-3.6-flash
+
+# OpenRouter
+OPENROUTER_API_KEY=
+OPENROUTER_MODEL=google/gemini-2.5-flash
 ```
 
 No secret is exposed through a `NEXT_PUBLIC_*` variable.
@@ -24,15 +32,15 @@ No secret is exposed through a `NEXT_PUBLIC_*` variable.
 - `main.tex` is unchanged and remains the canonical supported import fixture.
 - Resume, job, comparison, change, compile, and workspace contracts are Zod schemas under `src/features`.
 - `extractTextFromFile` supports PDF (`pdfjs-dist`), Word DOCX (`mammoth`), LaTeX, and plain text.
-- `KnownTemplateImporter` handles the bundled article template deterministically; uncertain templates fall back to the server-only Gemini provider.
-- `renderResumeToLatex` owns deterministic source generation and escaping.
+- `KnownTemplateImporter` handles the bundled article template deterministically; uncertain templates fall back to the server-only AI provider (Google Gemini or OpenRouter).
+- `renderResumeToLatex` owns deterministic source generation and escaping across canonical, compact, and minimal presets.
 - Zustand holds the active workspace and bounded session history. IndexedDB persists one versioned workspace and the last successful PDF after a 750 ms debounce.
 - Four Node.js route handlers expose parse, analyze, tailor, and proofread operations. Prompts treat all document text as untrusted, use no tools, and validate JSON both structurally and semantically.
-- Siglum runs pdfLaTeX in a browser worker with CTAN fetching disabled. Runtime bundles and WASM are loaded from Siglum’s CDN and cached by the browser; the worker is copied locally during `postinstall`.
+- Siglum runs pdfLaTeX in a browser worker with TeX Live 2025 bundles, same-origin on-demand package proxying, and browser caches. Users can attach workspace-scoped `.sty`, `.cls`, bibliography, image, and pdfLaTeX font support files for custom templates.
 
 ## Privacy and factuality
 
-Local documents remain in browser storage unless an AI action or uncertain import requires Gemini. Structured outputs use official Gemini JSON modes. The application never logs resumes, job descriptions, prompts, model output, email addresses, or phone numbers.
+Local documents remain in browser storage unless an AI action or uncertain import requires an AI provider. Structured outputs use JSON Schema plus local Zod and semantic validation. The application never logs resumes, job descriptions, prompts, model output, email addresses, or phone numbers.
 
 Before a proposal reaches review, it is checked for valid targets, exact source text, exact evidence, known requirement IDs, duplicate targets, invented metrics, unsupported technologies, and attempts to convert unsupported gaps into applicable changes.
 
@@ -52,5 +60,6 @@ Playwright screenshots are written to `artifacts/` for the bounded visual review
 
 - One local workspace and one supported template.
 - Browser compilation requires cross-origin isolation and WebAssembly.
-- The free AI model can be rate limited or unavailable.
+- Gemini availability and quotas depend on the configured billing-enabled project.
+- Browser TeX Live has broad package and font coverage, but documents requiring unrestricted shell escape or unsupported native binaries will not match Overleaf.
 - Authentication, cloud sync, analytics, cover letters, model selection, autonomous agents, and server-side compilation are out of scope.

@@ -1,6 +1,7 @@
 import { readTargetText } from "@/features/changes/apply-change";
 import { resolveEvidence, resumeCorpus } from "@/features/changes/validate-change";
 import type { ProofreadingChange } from "@/features/changes/schema";
+import type { GuidanceContext } from "@/features/guidance/schema";
 import type { JobAnalysisResponse } from "@/features/jobs/schema";
 import type { Resume } from "@/features/resume/schema";
 import { AppError } from "@/lib/ai/errors";
@@ -52,11 +53,13 @@ export function assertValidJobComparison(result: JobAnalysisResponse, resume: Re
   }
 }
 
-export function filterValidProofreadingChanges(changes: ProofreadingChange[], resume: Resume) {
+export function filterValidProofreadingChanges(changes: ProofreadingChange[], resume: Resume, guidance?: GuidanceContext) {
   const corpus = resumeCorpus(resume);
   const seenTargets = new Set<string>();
   const valid: ProofreadingChange[] = [];
   const rejected: Array<{ id: string; code: string; message: string }> = [];
+  const allowedRuleIds = guidance ? new Set(guidance.chunks.map((chunk) => chunk.id)) : null;
+
   for (const change of changes) {
     const key = JSON.stringify(change.target);
     const current = readTargetText(resume, change.target);
@@ -65,6 +68,7 @@ export function filterValidProofreadingChanges(changes: ProofreadingChange[], re
     else if (current === undefined) code = "invalid-target";
     else if (current !== change.before) code = "source-mismatch";
     else if (normalize(change.before) === normalize(change.after)) code = "unchanged";
+    else if (allowedRuleIds && change.guidanceRuleIds.some((id) => !allowedRuleIds.has(id))) code = "unknown-guidance-id";
     else {
       const numbers = change.after.match(/(?:\$?\d[\d,.]*\s?(?:%|x|k|m|b|million|billion|users?)?)/gi) ?? [];
       if (numbers.some((claim) => !corpus.includes(normalize(claim)))) code = "invented-metric";

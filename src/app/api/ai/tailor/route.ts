@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { ResumeSchema } from "@/features/resume/schema";
 import { JobAnalysisResponseSchema, TargetJobSchema } from "@/features/jobs/schema";
+import { retrieveGuidance } from "@/features/guidance/retrieve";
 import { apiErrorResponse } from "@/lib/ai/errors";
 import { getResumeAIProvider } from "@/lib/ai/factory";
 import { dedupeRequest, parseJsonRequest, requestKey } from "@/lib/ai/request";
@@ -17,8 +18,9 @@ const InputSchema = z.object({
 export async function POST(request: Request) {
   try {
     const input = await parseJsonRequest(request, InputSchema, 260_000);
-    const key = await requestKey("tailor", input);
-    const result = await dedupeRequest(key, () => getResumeAIProvider().generateTailoringSuggestions(input.resume, input.targetJob, input.analysis, input.resumeRevision));
+    const guidance = retrieveGuidance({ task: "tailor", resume: input.resume, targetJob: input.targetJob });
+    const key = await requestKey("tailor", { ...input, guidance });
+    const result = await dedupeRequest(key, () => getResumeAIProvider().generateTailoringSuggestions(input.resume, input.targetJob, input.analysis, input.resumeRevision, guidance));
     return Response.json(result);
   } catch (error) {
     return apiErrorResponse(error);

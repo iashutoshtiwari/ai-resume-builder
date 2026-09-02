@@ -1,5 +1,3 @@
-import { createId } from "@/lib/utils";
-
 /**
  * Extract and parse JSON from raw LLM output, handling markdown fences,
  * conversational preambles, reasoning tags (<think>...</think>), and trailing text.
@@ -81,14 +79,15 @@ export function normalizeRawJobAnalysis(raw: unknown): unknown {
   const requirements = rawReqs.map((req: unknown, index: number) => {
     const reqObj = typeof req === "object" && req !== null ? (req as Record<string, unknown>) : null;
     let id = reqObj && reqObj.id ? String(reqObj.id) : `req-${index + 1}`;
-    if (reqSeen.has(id)) id = `req-${index + 1}-${Math.random().toString(36).slice(2, 6)}`;
+    if (reqSeen.has(id)) id = `req-${index + 1}`;
+    while (reqSeen.has(id)) id = `${id}-duplicate`;
     reqSeen.add(id);
 
     const validCategory = ["skill", "technology", "experience", "responsibility", "domain", "education", "soft-skill", "other"];
     const category = reqObj && typeof reqObj.category === "string" && validCategory.includes(reqObj.category) ? reqObj.category : "skill";
     const validImportance = ["required", "preferred", "inferred"];
     const importance = reqObj && typeof reqObj.importance === "string" && validImportance.includes(reqObj.importance) ? reqObj.importance : "required";
-    const text = typeof req === "string" ? req : reqObj ? String(reqObj.text || reqObj.requirement || reqObj.name || "Requirement") : "Requirement";
+    const text = typeof req === "string" ? req : reqObj ? String(reqObj.text || reqObj.requirement || reqObj.name || "") : "";
 
     return { id, text: text.slice(0, 600), category, importance };
   });
@@ -112,8 +111,8 @@ export function normalizeRawJobAnalysis(raw: unknown): unknown {
   const entries = requirements.map((req: { id: string; text: string }) => {
     const existing = entryMap.get(req.id);
     const validStatus = ["supported", "under-emphasized", "unsupported"];
-    const status = existing && typeof existing.status === "string" && validStatus.includes(existing.status) ? existing.status : "under-emphasized";
-    const explanation = existing && existing.explanation ? String(existing.explanation).slice(0, 800) : `Evaluated against resume requirements for ${req.text}`;
+    const status = existing && typeof existing.status === "string" && validStatus.includes(existing.status) ? existing.status : "unsupported";
+    const explanation = existing && existing.explanation ? String(existing.explanation).slice(0, 800) : "No matching resume evidence was identified.";
     const evidence = existing && Array.isArray(existing.evidence) ? existing.evidence : [];
 
     return {
@@ -128,7 +127,7 @@ export function normalizeRawJobAnalysis(raw: unknown): unknown {
     analysis: {
       company: analysisObj.company ? String(analysisObj.company).slice(0, 200) : undefined,
       role: analysisObj.role ? String(analysisObj.role).slice(0, 200) : undefined,
-      summary: String(analysisObj.summary || "Target job role analysis").slice(0, 1200),
+      summary: String(analysisObj.summary || "").slice(0, 1200),
       requirements,
       keywords: Array.isArray(analysisObj.keywords) ? analysisObj.keywords.map(String) : [],
       primaryResponsibilities: Array.isArray(analysisObj.primaryResponsibilities) ? analysisObj.primaryResponsibilities.map(String) : [],
@@ -152,10 +151,17 @@ export function normalizeRawResume(raw: unknown): unknown {
   const resumeObj = (typeof unwrapCandidate === "object" && unwrapCandidate !== null ? unwrapCandidate : {}) as Record<string, unknown>;
 
   const seenIds = new Set<string>();
+  const idCounters = new Map<string, number>();
   const getUniqueId = (prefix: string, existingId?: unknown): string => {
     let id = typeof existingId === "string" && existingId.trim() ? existingId.trim() : "";
     if (!id || seenIds.has(id)) {
-      id = createId(prefix);
+      let counter = (idCounters.get(prefix) ?? 0) + 1;
+      id = `${prefix}-${counter}`;
+      while (seenIds.has(id)) {
+        counter += 1;
+        id = `${prefix}-${counter}`;
+      }
+      idCounters.set(prefix, counter);
     }
     seenIds.add(id);
     return id;
@@ -166,6 +172,7 @@ export function normalizeRawResume(raw: unknown): unknown {
   const links = Array.isArray(rawBasics.links)
     ? rawBasics.links.map((link: unknown) => {
         if (typeof link === "string") {
+          if (!link.trim()) return null;
           return {
             id: getUniqueId("link"),
             label: link.replace(/^https?:\/\//, "").split("/")[0] || "Link",
@@ -175,11 +182,12 @@ export function normalizeRawResume(raw: unknown): unknown {
         if (typeof link === "object" && link !== null) {
           const linkObj = link as Record<string, unknown>;
           const url = String(linkObj.url || linkObj.href || linkObj.link || "");
-          const label = String(linkObj.label || linkObj.name || linkObj.title || url || "Link");
+          if (!url.trim()) return null;
+          const label = String(linkObj.label || linkObj.name || linkObj.title || url);
           return {
             id: getUniqueId("link", linkObj.id),
             label: label.slice(0, 160),
-            url: (url.startsWith("http") ? url : `https://${url || "example.com"}`).slice(0, 2048),
+            url: (url.startsWith("http") ? url : `https://${url}`).slice(0, 2048),
           };
         }
         return null;
@@ -187,7 +195,7 @@ export function normalizeRawResume(raw: unknown): unknown {
     : [];
 
   const basics = {
-    name: String(rawBasics.name || rawBasics.fullName || resumeObj.name || "Candidate").slice(0, 160),
+    name: String(rawBasics.name || rawBasics.fullName || resumeObj.name || "").slice(0, 160),
     headline: rawBasics.headline || rawBasics.title || rawBasics.summary ? String(rawBasics.headline || rawBasics.title || rawBasics.summary).slice(0, 240) : undefined,
     email: rawBasics.email ? String(rawBasics.email).slice(0, 254) : undefined,
     phone: rawBasics.phone ? String(rawBasics.phone).slice(0, 80) : undefined,
@@ -237,7 +245,7 @@ export function normalizeRawResume(raw: unknown): unknown {
 
         return {
           id: getUniqueId("skill-group", groupObj.id),
-          name: String(groupObj.name || groupObj.category || "General").slice(0, 120),
+          name: String(groupObj.name || groupObj.category || "").slice(0, 120),
           skills: groupSkills,
         };
       });
@@ -266,8 +274,8 @@ export function normalizeRawResume(raw: unknown): unknown {
 
         return {
           id: getUniqueId("exp", expObj.id),
-          company: String(expObj.company || expObj.employer || expObj.organization || "Company").slice(0, 200),
-          role: String(expObj.role || expObj.title || expObj.position || "Role").slice(0, 200),
+          company: String(expObj.company || expObj.employer || expObj.organization || "").slice(0, 200),
+          role: String(expObj.role || expObj.title || expObj.position || "").slice(0, 200),
           location: expObj.location ? String(expObj.location).slice(0, 160) : undefined,
           startDate: String(expObj.startDate || expObj.start || expObj.from || "").slice(0, 80),
           endDate: String(expObj.endDate || expObj.end || expObj.to || "").slice(0, 80),
@@ -313,7 +321,8 @@ export function normalizeRawResume(raw: unknown): unknown {
 
         const rawLinks = Array.isArray(projObj.links) ? projObj.links : [];
         const projLinks = rawLinks.map((link: unknown) => {
-          if (typeof link === "string") {
+        if (typeof link === "string") {
+            if (!link.trim()) return null;
             return {
               id: getUniqueId("link"),
               label: "Project Link",
@@ -325,16 +334,16 @@ export function normalizeRawResume(raw: unknown): unknown {
             const url = String(linkObj.url || linkObj.href || linkObj.link || "");
             return {
               id: getUniqueId("link", linkObj.id),
-              label: String(linkObj.label || linkObj.name || "Project Link").slice(0, 160),
-              url: (url.startsWith("http") ? url : `https://${url || "example.com"}`).slice(0, 2048),
+              label: String(linkObj.label || linkObj.name || url).slice(0, 160),
+              url: (url.startsWith("http") ? url : `https://${url}`).slice(0, 2048),
             };
           }
           return null;
-        }).filter((item): item is { id: string; label: string; url: string } => item !== null);
+        }).filter((item): item is { id: string; label: string; url: string } => item !== null && item.url !== "https://");
 
         return {
           id: getUniqueId("proj", projObj.id),
-          name: String(projObj.name || projObj.title || "Project").slice(0, 200),
+          name: String(projObj.name || projObj.title || "").slice(0, 200),
           description: projObj.description ? String(projObj.description).slice(0, 500) : undefined,
           technologies,
           links: projLinks,
@@ -365,8 +374,8 @@ export function normalizeRawResume(raw: unknown): unknown {
 
         return {
           id: getUniqueId("edu", eduObj.id),
-          institution: String(eduObj.institution || eduObj.school || eduObj.university || "Institution").slice(0, 200),
-          degree: String(eduObj.degree || "Degree").slice(0, 200),
+          institution: String(eduObj.institution || eduObj.school || eduObj.university || "").slice(0, 200),
+          degree: String(eduObj.degree || "").slice(0, 200),
           field: eduObj.field || eduObj.major ? String(eduObj.field || eduObj.major).slice(0, 200) : undefined,
           location: eduObj.location ? String(eduObj.location).slice(0, 160) : undefined,
           startDate: eduObj.startDate ? String(eduObj.startDate).slice(0, 80) : undefined,

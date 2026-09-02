@@ -20,4 +20,9 @@ describe("document extractor", () => {
     expect(result.format).toBe("latex");
     expect(result.text).toContain("\\documentclass{article}");
   });
+
+  it("rejects legacy Word and unrelated binary formats with useful guidance", async () => {
+    await expect(extractTextFromFile(new File(["legacy"], "resume.doc"))).rejects.toThrow(/save it as \.docx/i);
+    await expect(extractTextFromFile(new File(["binary"], "resume.rtf"))).rejects.toThrow(/unsupported resume format/i);
+  });
 });

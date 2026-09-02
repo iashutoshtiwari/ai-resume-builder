@@ -37,3 +37,6 @@ export async function hashText(text: string): Promise<string> {
   return `hash-${Math.abs(hash).toString(16)}`;
 }
 
+export function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}

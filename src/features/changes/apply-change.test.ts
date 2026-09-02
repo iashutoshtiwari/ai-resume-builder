@@ -13,6 +13,7 @@ function baseChange(overrides: Partial<ResumeChange> = {}): ResumeChange {
     reason: "Clarifies the existing API work.",
     evidence: [{ type: "experience", entityId: "experience-example", itemId: "bullet-api" }],
     jobRequirementIds: ["req-api"],
+    guidanceRuleIds: ["er-relevant-content"],
     risk: "safe",
     status: "pending",
     resumeRevision: "revision-1",

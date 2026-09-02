@@ -20,6 +20,8 @@ import {
   PanelRight,
   Redo2,
   Save,
+  ShieldCheck,
+  SlidersHorizontal,
   Sparkles,
   Undo2,
   Wrench,
@@ -37,7 +39,9 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ChangesPanel, JobPanel, ProofreadPanel } from "@/features/workspace/ai-panels";
+import { GuidancePanel } from "@/features/guidance/guidance-panel";
 import { LatexPanel } from "@/features/workspace/latex-panel";
+import { FormatPanel } from "@/features/presentation/format-panel";
 import { EducationPanel, ExperiencePanel, OverviewPanel, ProjectsPanel, SkillsPanel } from "@/features/workspace/resume-panels";
 import { useWorkspaceStore, type WorkspacePanel } from "@/store/workspace-store";
 
@@ -56,6 +60,8 @@ const nav: Array<{ id: WorkspacePanel; label: string; icon: typeof LayoutDashboa
   { id: "projects", label: "Projects", icon: Wrench, group: "Resume" },
   { id: "skills", label: "Skills", icon: BookOpen, group: "Resume" },
   { id: "education", label: "Education", icon: GraduationCap, group: "Resume" },
+  { id: "format", label: "Format", icon: SlidersHorizontal, group: "Resume" },
+  { id: "guidance", label: "Guidance", icon: ShieldCheck, group: "Resume" },
   { id: "job", label: "Target Job", icon: Sparkles, group: "AI Tailoring" },
   { id: "changes", label: "Diffs & Changes", icon: FileCheck2, group: "AI Tailoring" },
   { id: "proofread", label: "Proofread", icon: FilePenLine, group: "AI Tailoring" },
@@ -69,6 +75,8 @@ function CurrentPanel({ aiConfigured }: { aiConfigured: boolean }) {
   if (panel === "projects") return <ProjectsPanel />;
   if (panel === "skills") return <SkillsPanel />;
   if (panel === "education") return <EducationPanel />;
+  if (panel === "format") return <FormatPanel />;
+  if (panel === "guidance") return <GuidancePanel />;
   if (panel === "job") return <JobPanel aiConfigured={aiConfigured} />;
   if (panel === "changes") return <ChangesPanel />;
   if (panel === "proofread") return <ProofreadPanel aiConfigured={aiConfigured} />;
@@ -380,7 +388,7 @@ export function WorkspaceShell({ aiConfigured }: { aiConfigured: boolean }) {
           {/* Sub-navigation for Editor */}
           {activeMobileTab === "editor" && (
             <div className="flex gap-1 overflow-x-auto border-b border-border bg-background px-3 py-1.5">
-              {(["overview", "experience", "projects", "skills", "education", "latex"] as WorkspacePanel[]).map((id) => (
+              {(["overview", "experience", "projects", "skills", "education", "format", "guidance", "latex"] as WorkspacePanel[]).map((id) => (
                 <Button
                   key={id}
                   size="sm"

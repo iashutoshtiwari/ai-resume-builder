@@ -12,6 +12,7 @@ const change: ResumeChange = {
   reason: "Clarifies relevant work.",
   evidence: [{ type: "experience", entityId: "experience-example", itemId: "bullet-api", quote: "Integrated REST APIs" }],
   jobRequirementIds: [],
+  guidanceRuleIds: ["er-relevant-content"],
   risk: "safe",
   status: "pending",
   resumeRevision: "revision-1",
@@ -25,5 +26,31 @@ describe("validateChangeAgainstResume", () => {
   it("rejects job technologies absent from resume evidence", () => {
     const analysis = { company: "Example", role: "Engineer", summary: "Role", requirements: [{ id: "req-k8s", text: "Kubernetes", category: "technology" as const, importance: "preferred" as const }], keywords: [], primaryResponsibilities: [], senioritySignals: [], domainSignals: [] };
     expect(validateChangeAgainstResume({ ...change, after: `${change.after} using Kubernetes.`, jobRequirementIds: ["req-k8s"] }, sampleResume, analysis)).toMatchObject({ valid: false, code: "unsupported-technology" });
+  });
+
+  it("validates guidance rule citations against supplied guidance context", () => {
+    const guidance = {
+      snapshotVersion: "test-v1",
+      chunks: [
+        {
+          id: "er-relevant-content",
+          title: "Relevant",
+          guidance: "Guidance text",
+          sourceUrl: "https://www.reddit.com/r/EngineeringResumes/wiki/index/#wiki_general_rules",
+          sourceSection: "General Rules",
+          reviewedAt: "2026-09-02",
+          applicability: "general" as const,
+          tasks: ["tailor" as const],
+          sections: ["global" as const],
+          tags: ["relevance"],
+          mandatory: false,
+        },
+      ],
+    };
+    expect(validateChangeAgainstResume(change, sampleResume, undefined, guidance)).toEqual({ valid: true });
+    expect(validateChangeAgainstResume({ ...change, guidanceRuleIds: ["unknown-rule-id"] }, sampleResume, undefined, guidance)).toMatchObject({
+      valid: false,
+      code: "unknown-guidance-id",
+    });
   });
 });

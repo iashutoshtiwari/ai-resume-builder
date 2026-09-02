@@ -76,6 +76,10 @@ export function ImportScreen({ canonicalLatex, aiConfigured }: { canonicalLatex:
 
   async function onFile(file?: File) {
     if (!file) return;
+    const extension = file.name.split(".").pop()?.toLowerCase();
+    if (!aiConfigured && extension !== "tex") {
+      return toast.error("PDF, DOCX, and text imports require an AI API key. LaTeX template imports remain local.");
+    }
     if (file.size > 8_000_000) {
       return toast.error("Uploaded resume must be 8 MB or smaller.");
     }
@@ -86,6 +90,9 @@ export function ImportScreen({ canonicalLatex, aiConfigured }: { canonicalLatex:
       const extracted = await extractTextFromFile(file);
       if (!extracted.text || extracted.text.trim().length < 20) {
         throw new Error("Could not extract readable text from this file. If it is a scanned image, try a standard text PDF or Word document.");
+      }
+      if (new TextEncoder().encode(extracted.text).byteLength > 200_000) {
+        throw new Error("The extracted resume text exceeds 200 KB. Remove embedded appendices or export a shorter resume and try again.");
       }
       setSource(extracted.text);
       setDetectedFormat(extracted.format);
@@ -179,7 +186,7 @@ export function ImportScreen({ canonicalLatex, aiConfigured }: { canonicalLatex:
               </div>
               <div className="space-y-2 pt-2">
                 <Button className="w-full justify-between" onClick={() => void begin()}>
-                  Open Workspace & Compile PDF <ArrowRight className="size-4" />
+                  Open Workspace <ArrowRight className="size-4" />
                 </Button>
                 <Button variant="ghost" className="w-full text-xs" onClick={() => setResult(null)}>
                   Upload a different file
@@ -221,7 +228,7 @@ export function ImportScreen({ canonicalLatex, aiConfigured }: { canonicalLatex:
           </p>
           <div className="mt-8 grid max-w-lg grid-cols-1 gap-px border-y border-border bg-border sm:grid-cols-3">
             {[
-              [ShieldCheck, "Zero Hallucinations", "Evidence-grounded edits only"],
+              [ShieldCheck, "Factual safeguards", "Evidence-grounded edits only"],
               [LockKeyhole, "Browser WASM", "Compiled locally into PDF"],
               [Sparkles, "Atomic Diffs", "Review and approve every change"],
             ].map(([Icon, title, copy]) => {
@@ -285,7 +292,7 @@ export function ImportScreen({ canonicalLatex, aiConfigured }: { canonicalLatex:
             <input
               ref={inputRef}
               type="file"
-              accept=".pdf,.docx,.doc,.tex,text/plain,text/x-tex,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+              accept=".pdf,.docx,.tex,.txt,text/plain,text/x-tex,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
               className="sr-only"
               onChange={(event) => void onFile(event.target.files?.[0])}
             />
@@ -365,12 +372,11 @@ export function ImportScreen({ canonicalLatex, aiConfigured }: { canonicalLatex:
 
           <div className="border-t border-border px-5 py-3.5 text-xs leading-5 text-muted-foreground">
             {aiConfigured
-              ? "Your resume text is extracted in your browser and structured with AI. Data is never stored permanently on remote servers."
-              : "AI is running in offline mode. Deterministic importing, LaTeX editing, WASM compilation, and exports remain available."}
+              ? "Text extraction and PDF compilation stay in your browser. AI parsing and tailoring use the configured AI provider."
+              : "PDF, DOCX, and text structuring require an API key (GEMINI_API_KEY or OPENROUTER_API_KEY). Known-template LaTeX import, editing, compilation, and exports remain available."}
           </div>
         </section>
       </div>
     </main>
   );
 }
-

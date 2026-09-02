@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { ResumeSchema } from "@/features/resume/schema";
-import { extractAndParseJson, normalizeRawResume } from "./normalize";
+import { extractAndParseJson, normalizeRawJobAnalysis, normalizeRawResume } from "./normalize";
 
 describe("normalizeRawResume", () => {
   it("normalizes an unstructured / lenient LLM output into strict valid ResumeSchema", () => {
@@ -75,6 +75,39 @@ describe("normalizeRawResume", () => {
     const parsed = ResumeSchema.safeParse(normalized.resume);
     expect(parsed.success).toBe(true);
   });
+
+  it("does not fabricate missing required resume facts", () => {
+    const normalized = normalizeRawResume({
+      resume: {
+        basics: { links: [{ label: "Missing URL" }] },
+        skills: [],
+        experience: [{ startDate: "2024", endDate: "Present", bullets: [] }],
+        projects: [],
+        education: [],
+      },
+    }) as { resume: unknown };
+
+    expect(ResumeSchema.safeParse(normalized.resume).success).toBe(false);
+    expect(JSON.stringify(normalized)).not.toContain("example.com");
+    expect(JSON.stringify(normalized)).not.toContain("Candidate");
+  });
+
+  it("classifies missing comparison output as unsupported deterministically", () => {
+    const raw = {
+      analysis: {
+        summary: "Role requirements",
+        requirements: [
+          { id: "duplicate", text: "React", category: "technology", importance: "required" },
+          { id: "duplicate", text: "Kubernetes", category: "technology", importance: "preferred" },
+        ],
+      },
+      comparison: { entries: [] },
+    };
+    const first = normalizeRawJobAnalysis(raw);
+    const second = normalizeRawJobAnalysis(raw);
+    expect(first).toEqual(second);
+    expect((first as { comparison: { entries: Array<{ status: string }> } }).comparison.entries.every((entry) => entry.status === "unsupported")).toBe(true);
+  });
 });
 
 describe("extractAndParseJson", () => {
@@ -92,4 +125,3 @@ describe("extractAndParseJson", () => {
     expect(extractAndParseJson(trailingCommaJson)).toEqual({ items: [1, 2], name: "test" });
   });
 });
-
