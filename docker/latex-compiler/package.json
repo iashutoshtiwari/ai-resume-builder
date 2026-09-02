@@ -1,0 +1,13 @@
+{
+  "name": "resume-latex-compiler",
+  "version": "1.0.0",
+  "description": "Resume-optimized LaTeX compilation microservice for Google Cloud Run (100% Free Tier)",
+  "type": "module",
+  "main": "server.mjs",
+  "scripts": {
+    "start": "node server.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

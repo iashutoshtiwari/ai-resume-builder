@@ -74,4 +74,15 @@ describe("renderResumeToLatex", () => {
     expect(latex).toContain("\\fontsize{10.5pt}{11.25pt}\\selectfont");
     expect(latex).toContain("{\\Huge \\textbf{Alex Morgan}}");
   });
+
+  it("renders new curated fonts accurately", () => {
+    const robotoLatex = renderResumeToLatex(sampleResume, { ...DEFAULT_PRESENTATION, fontFamily: "roboto" });
+    expect(robotoLatex).toContain("\\usepackage[sfdefault]{roboto}");
+
+    const garamondLatex = renderResumeToLatex(sampleResume, { ...DEFAULT_PRESENTATION, fontFamily: "ebgaramond" });
+    expect(garamondLatex).toContain("\\usepackage{ebgaramond}");
+
+    const monoLatex = renderResumeToLatex(sampleResume, { ...DEFAULT_PRESENTATION, fontFamily: "inconsolata" });
+    expect(monoLatex).toContain("\\usepackage{inconsolata}");
+  });
 });

@@ -7,6 +7,15 @@ const FONT_PACKAGES: Record<ResumePresentation["fontFamily"], string> = {
   "tex-gyre-heros": "\\usepackage{tgheros}\n\\renewcommand{\\familydefault}{\\sfdefault}",
   lato: "\\usepackage{lato}\n\\renewcommand{\\familydefault}{\\sfdefault}",
   "latin-modern": "\\usepackage{lmodern}",
+  newtx: "\\usepackage{newtxtext}",
+  newpx: "\\usepackage{newpxtext}",
+  ebgaramond: "\\usepackage{ebgaramond}",
+  libertine: "\\usepackage{libertine}",
+  roboto: "\\usepackage[sfdefault]{roboto}",
+  sourcesanspro: "\\usepackage[default]{sourcesanspro}",
+  inter: "\\usepackage[sfdefault]{inter}",
+  firasans: "\\usepackage[sfdefault]{firasans}",
+  inconsolata: "\\usepackage{inconsolata}\n\\renewcommand{\\familydefault}{\\ttdefault}",
 };
 
 const DENSITY = {

@@ -2,9 +2,25 @@ import { z } from "zod";
 
 export const RenderedSectionSchema = z.enum(["skills", "experience", "projects", "education"]);
 
+export const FontFamilySchema = z.enum([
+  "xcharter",
+  "tex-gyre-heros",
+  "lato",
+  "latin-modern",
+  "newtx",
+  "newpx",
+  "ebgaramond",
+  "libertine",
+  "roboto",
+  "sourcesanspro",
+  "inter",
+  "firasans",
+  "inconsolata",
+]);
+
 export const ResumePresentationSchema = z.object({
   templateId: z.enum(["canonical", "compact", "minimal"]),
-  fontFamily: z.enum(["xcharter", "tex-gyre-heros", "lato", "latin-modern"]),
+  fontFamily: FontFamilySchema,
   paperSize: z.enum(["letter", "a4"]),
   fontSize: z.union([z.literal(10.5), z.literal(11), z.literal(12)]),
   margin: z.union([z.literal(0.4), z.literal(0.5), z.literal(0.65)]),
@@ -16,6 +32,7 @@ export const ResumePresentationSchema = z.object({
 });
 
 export type RenderedSection = z.infer<typeof RenderedSectionSchema>;
+export type FontFamily = z.infer<typeof FontFamilySchema>;
 export type ResumePresentation = z.infer<typeof ResumePresentationSchema>;
 
 export const DEFAULT_PRESENTATION: ResumePresentation = {

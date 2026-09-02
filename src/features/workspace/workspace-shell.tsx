@@ -157,7 +157,7 @@ function Navigation({ collapsed, onToggle }: { collapsed: boolean; onToggle: () 
 }
 
 export function WorkspaceShell({ aiConfigured }: { aiConfigured: boolean }) {
-  const { hydrate, hydrated, workspace, saveStatus, past, future, undo, redo, panel, setPanel } = useWorkspaceStore();
+  const { hydrate, hydrated, workspace, saveStatus, past, future, undo, redo, panel, setPanel, compilerMode } = useWorkspaceStore();
   const [collapsed, setCollapsed] = useState(false);
   const [desktopView, setDesktopView] = useState<"split" | "editor" | "preview">("split");
   const [mobileTabOverride, setMobileTabOverride] = useState<"editor" | "ai" | "preview" | null>(null);
@@ -314,6 +314,20 @@ export function WorkspaceShell({ aiConfigured }: { aiConfigured: boolean }) {
               <TooltipContent>Focus PDF Preview</TooltipContent>
             </Tooltip>
           </div>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                onClick={() => setPanel("format")}
+                className="hidden items-center gap-1.5 rounded border border-border bg-card/60 px-2 py-1 font-mono text-[9px] uppercase tracking-wider text-muted-foreground hover:border-foreground/30 hover:text-foreground md:inline-flex"
+              >
+                <span className={`size-1.5 rounded-full ${compilerMode === "cloud" ? "bg-sky-500" : compilerMode === "auto" ? "bg-amber-500" : "bg-emerald-500"}`} />
+                {compilerMode === "cloud" ? "TeX Live (Cloud)" : compilerMode === "auto" ? "Auto Hybrid" : "Siglum WASM"}
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>Compiler: {compilerMode.toUpperCase()} (Click to open Format & Layout)</TooltipContent>
+          </Tooltip>
 
           {!aiConfigured && (
             <Badge variant="outline" className="hidden text-warning sm:flex text-[9px]">
