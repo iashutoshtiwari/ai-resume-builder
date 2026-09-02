@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { HybridLatexCompiler, RemoteLatexCompiler } from "@/features/latex/compiler";
+import { RemoteLatexCompiler } from "@/features/latex/compiler";
 
 describe("RemoteLatexCompiler", () => {
   beforeEach(() => {
@@ -25,7 +25,6 @@ describe("RemoteLatexCompiler", () => {
 
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.engine).toBe("cloud");
       expect(result.pdf).toBeInstanceOf(Blob);
       expect(result.logs).toBe("Compiled successfully");
     }
@@ -60,43 +59,23 @@ describe("RemoteLatexCompiler", () => {
 
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.engine).toBe("cloud");
       expect(result.errors[0]?.message).toBe("Undefined control sequence");
       expect(result.errors[0]?.line).toBe(10);
     }
   });
-});
 
-describe("HybridLatexCompiler", () => {
-  it("defaults to wasm mode and switches modes", () => {
-    const hybrid = new HybridLatexCompiler();
-    expect(hybrid.getMode()).toBe("wasm");
+  it("handles network failure gracefully", async () => {
+    globalThis.fetch = vi.fn().mockRejectedValueOnce(new Error("Network connection error"));
 
-    hybrid.setMode("cloud");
-    expect(hybrid.getMode()).toBe("cloud");
-
-    hybrid.setMode("auto");
-    expect(hybrid.getMode()).toBe("auto");
-  });
-
-  it("routes compile calls directly to cloud in cloud mode", async () => {
-    globalThis.fetch = vi.fn().mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({
-        success: true,
-        pdf: "JVBERi0xLjQK",
-        logs: "Cloud compile ok",
-      }),
-    } as unknown as Response);
-
-    const hybrid = new HybridLatexCompiler("cloud");
-    const result = await hybrid.compile({
-      source: "\\documentclass{article}\\begin{document}Hello\\end{document}",
+    const compiler = new RemoteLatexCompiler();
+    const result = await compiler.compile({
+      source: "\\documentclass{article}\\begin{document}Test\\end{document}",
     });
 
-    expect(result.success).toBe(true);
-    if (result.success) {
-      expect(result.engine).toBe("cloud");
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.errors[0]?.code).toBe("runtime");
+      expect(result.errors[0]?.message).toContain("Network connection error");
     }
   });
 });

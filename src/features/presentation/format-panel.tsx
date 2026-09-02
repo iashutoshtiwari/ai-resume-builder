@@ -2,7 +2,7 @@
 
 /* eslint-disable react-hooks/refs -- dnd-kit exposes callback refs and transform state through useSortable. */
 
-import { ArrowDown, ArrowUp, Check, Cloud, Columns2, Cpu, GripVertical, LayoutTemplate, RotateCcw, SlidersHorizontal, Sparkles } from "lucide-react";
+import { ArrowDown, ArrowUp, Check, Columns2, GripVertical, LayoutTemplate, RotateCcw, SlidersHorizontal } from "lucide-react";
 import { DndContext, KeyboardSensor, PointerSensor, closestCenter, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, arrayMove, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -163,8 +163,6 @@ function SortableSectionItem({
 export function FormatPanel() {
   const workspace = useWorkspaceStore((state) => state.workspace)!;
   const setPresentation = useWorkspaceStore((state) => state.setPresentation);
-  const compilerMode = useWorkspaceStore((state) => state.compilerMode);
-  const setCompilerMode = useWorkspaceStore((state) => state.setCompilerMode);
   const presentation = workspace.presentation ?? DEFAULT_PRESENTATION;
 
   const update = (patch: Partial<ResumePresentation>) => {
@@ -458,83 +456,6 @@ export function FormatPanel() {
               </div>
             </div>
           )}
-        </section>
-
-        {/* Compiler Engine */}
-        <section className="space-y-3 border-t border-border pt-5">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-sm font-semibold flex items-center gap-1.5">
-                <Cpu className="size-4 text-primary" /> LaTeX Compiler Engine
-              </h3>
-              <p className="mt-0.5 text-xs text-muted-foreground">
-                Select your preferred compilation pipeline. Both options are 100% free and production-grade.
-              </p>
-            </div>
-            <span className="font-mono text-[11px] text-muted-foreground">Hybrid</span>
-          </div>
-
-          <div className="grid gap-2.5 sm:grid-cols-3">
-            <button
-              type="button"
-              onClick={() => setCompilerMode("wasm")}
-              className={`flex flex-col text-left rounded-lg border p-3 transition-all ${
-                compilerMode === "wasm"
-                  ? "border-primary bg-primary/5 shadow-sm ring-1 ring-primary"
-                  : "border-border hover:border-muted-foreground/40 hover:bg-muted/30"
-              }`}
-            >
-              <div className="flex items-center justify-between w-full">
-                <span className="text-xs font-semibold flex items-center gap-1.5">
-                  <Cpu className="size-3.5 text-primary" /> Browser WASM
-                </span>
-                {compilerMode === "wasm" && <Check className="size-3.5 text-primary" />}
-              </div>
-              <p className="mt-1 text-[11px] text-muted-foreground leading-snug">
-                Fast, instant, 100% offline & private. Runs directly in WebAssembly.
-              </p>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setCompilerMode("cloud")}
-              className={`flex flex-col text-left rounded-lg border p-3 transition-all ${
-                compilerMode === "cloud"
-                  ? "border-primary bg-primary/5 shadow-sm ring-1 ring-primary"
-                  : "border-border hover:border-muted-foreground/40 hover:bg-muted/30"
-              }`}
-            >
-              <div className="flex items-center justify-between w-full">
-                <span className="text-xs font-semibold flex items-center gap-1.5">
-                  <Cloud className="size-3.5 text-primary" /> Cloud TeX Live
-                </span>
-                {compilerMode === "cloud" && <Check className="size-3.5 text-primary" />}
-              </div>
-              <p className="mt-1 text-[11px] text-muted-foreground leading-snug">
-                Google Cloud Run ($0/mo). Full font inventory, tikz, any package.
-              </p>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setCompilerMode("auto")}
-              className={`flex flex-col text-left rounded-lg border p-3 transition-all ${
-                compilerMode === "auto"
-                  ? "border-primary bg-primary/5 shadow-sm ring-1 ring-primary"
-                  : "border-border hover:border-muted-foreground/40 hover:bg-muted/30"
-              }`}
-            >
-              <div className="flex items-center justify-between w-full">
-                <span className="text-xs font-semibold flex items-center gap-1.5">
-                  <Sparkles className="size-3.5 text-primary" /> Auto Hybrid
-                </span>
-                {compilerMode === "auto" && <Check className="size-3.5 text-primary" />}
-              </div>
-              <p className="mt-1 text-[11px] text-muted-foreground leading-snug">
-                Fast local WASM with automatic fallback to Cloud TeX Live if needed.
-              </p>
-            </button>
-          </div>
         </section>
       </div>
     </div>

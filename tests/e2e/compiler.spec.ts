@@ -2,12 +2,12 @@ import { expect, test } from "@playwright/test";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
-test("Siglum compiles the rendered resume and canonical main.tex in Chromium", async ({ page }) => {
+test("TeX Live compiles the rendered resume and canonical main.tex in Chromium", async ({ page }) => {
   test.setTimeout(180_000);
   await page.goto("/");
   await page.getByRole("button", { name: /start instantly with a sample/i }).click();
   await page.waitForURL("**/workspace");
-  await page.getByRole("button", { name: "Compile locally" }).click();
+  await page.getByRole("button", { name: /compile/i }).first().click();
   await expect(page.getByRole("button", { name: "Download PDF" })).toBeEnabled({ timeout: 150_000 });
   await expect(page.getByText(/LaTeX compilation failed/i)).toHaveCount(0);
   const mainTex = await readFile(resolve(process.cwd(), "main.tex"), "utf8");

@@ -10,7 +10,6 @@ import { DEFAULT_PRESENTATION, type ResumePresentation } from "@/features/presen
 import type { Resume } from "@/features/resume/schema";
 import type { Workspace } from "@/features/workspace/schema";
 import type { LatexProjectFile } from "@/features/workspace/schema";
-import type { CompilerMode } from "@/features/latex/compiler";
 import { clearWorkspace, loadWorkspace, saveWorkspace } from "@/lib/storage/workspace-db";
 import { createId, hashText } from "@/lib/utils";
 
@@ -28,8 +27,6 @@ type WorkspaceStore = {
   compileStatus: "idle" | "compiling" | "success" | "error";
   compileLogs: string;
   compileError: string | null;
-  compilerMode: CompilerMode;
-  setCompilerMode: (mode: CompilerMode) => void;
   hydrate: () => Promise<void>;
   startWorkspace: (resume: Resume, originalLatex: string | null, name?: string) => Promise<void>;
   updateResume: (updater: (resume: Resume) => Resume) => void;
@@ -86,17 +83,6 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => ({
   compileStatus: "idle",
   compileLogs: "",
   compileError: null,
-  compilerMode: (typeof window !== "undefined" && (localStorage.getItem("resume-compiler-mode") as CompilerMode)) || "wasm",
-  setCompilerMode: (compilerMode) => {
-    if (typeof window !== "undefined") {
-      try {
-        localStorage.setItem("resume-compiler-mode", compilerMode);
-      } catch {
-        // ignore localStorage errors
-      }
-    }
-    set({ compilerMode });
-  },
 
   hydrate: async () => {
     if (get().hydrated) return;

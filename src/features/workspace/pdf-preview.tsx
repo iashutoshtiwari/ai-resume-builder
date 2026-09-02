@@ -7,25 +7,22 @@ import "react-pdf/dist/Page/AnnotationLayer.css";
 import {
   ChevronLeft,
   ChevronRight,
-  Cloud,
-  Cpu,
   Download,
   FileWarning,
   Maximize2,
   Minus,
   Plus,
   RefreshCw,
-  Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { HybridLatexCompiler } from "@/features/latex/compiler";
+import { RemoteLatexCompiler } from "@/features/latex/compiler";
 import { hashCompileInput } from "@/features/latex/source-hash";
 import { sanitizeFilename } from "@/lib/utils";
 import { useWorkspaceStore } from "@/store/workspace-store";
 
 pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
-const compiler = new HybridLatexCompiler();
+const compiler = new RemoteLatexCompiler();
 
 function downloadBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
@@ -42,8 +39,6 @@ export function PdfPreview({ compact = false }: { compact?: boolean }) {
   const compileStatus = useWorkspaceStore((state) => state.compileStatus);
   const compileError = useWorkspaceStore((state) => state.compileError);
   const compileLogs = useWorkspaceStore((state) => state.compileLogs);
-  const compilerMode = useWorkspaceStore((state) => state.compilerMode);
-  const setCompilerMode = useWorkspaceStore((state) => state.setCompilerMode);
   const setPending = useWorkspaceStore((state) => state.setCompilePending);
   const setSuccess = useWorkspaceStore((state) => state.setCompileSuccess);
   const setFailure = useWorkspaceStore((state) => state.setCompileFailure);
@@ -70,7 +65,6 @@ export function PdfPreview({ compact = false }: { compact?: boolean }) {
   async function compile() {
     setPending();
     const hash = await hashCompileInput(source, workspace.compilerFiles);
-    compiler.setMode(compilerMode);
     const result = await compiler.compile({
       source,
       files: workspace.compilerFiles.map((file) => ({ name: file.name, content: file.content })),
@@ -78,9 +72,8 @@ export function PdfPreview({ compact = false }: { compact?: boolean }) {
 
     if (result.success) {
       setSuccess(result.pdf, hash, result.logs);
-      const engineLabel = result.engine === "cloud" ? "Cloud TeX Live" : "local WASM";
       toast.success(
-        result.cached ? "Loaded compiled PDF from browser cache" : `PDF compiled via ${engineLabel}`
+        result.cached ? "Loaded compiled PDF from cache" : "PDF compiled successfully"
       );
     } else {
       const message = result.errors[0]?.message ?? "Compilation failed.";
@@ -136,40 +129,6 @@ export function PdfPreview({ compact = false }: { compact?: boolean }) {
             {pdfBlob ? "Recompile" : "Compile"}
           </Button>
 
-          {/* Compiler Mode Segmented Toggle */}
-          <div className="flex items-center rounded-md border border-black/15 bg-white/80 p-0.5 text-xs">
-            <button
-              type="button"
-              onClick={() => setCompilerMode("wasm")}
-              className={`flex items-center gap-1 rounded px-2 py-0.5 text-[10px] font-medium transition-colors ${
-                compilerMode === "wasm" ? "bg-zinc-950 text-white" : "text-zinc-600 hover:text-zinc-950"
-              }`}
-              title="Browser WebAssembly: Fast, private, offline"
-            >
-              <Cpu className="size-3" /> WASM
-            </button>
-            <button
-              type="button"
-              onClick={() => setCompilerMode("cloud")}
-              className={`flex items-center gap-1 rounded px-2 py-0.5 text-[10px] font-medium transition-colors ${
-                compilerMode === "cloud" ? "bg-zinc-950 text-white" : "text-zinc-600 hover:text-zinc-950"
-              }`}
-              title="Cloud TeX Live: Full engine, all fonts & packages"
-            >
-              <Cloud className="size-3" /> Cloud
-            </button>
-            <button
-              type="button"
-              onClick={() => setCompilerMode("auto")}
-              className={`flex items-center gap-1 rounded px-2 py-0.5 text-[10px] font-medium transition-colors ${
-                compilerMode === "auto" ? "bg-zinc-950 text-white" : "text-zinc-600 hover:text-zinc-950"
-              }`}
-              title="Auto Hybrid: WASM with Cloud fallback"
-            >
-              <Sparkles className="size-3" /> Auto
-            </button>
-          </div>
-
           {stale && <span className="font-mono text-[10px] text-amber-800">PREVIEW STALE</span>}
         </div>
 
@@ -215,20 +174,14 @@ export function PdfPreview({ compact = false }: { compact?: boolean }) {
               <FileWarning className="mx-auto size-6 text-zinc-400" />
               <p className="mt-3 text-sm font-medium">No compiled preview yet</p>
               <p className="mt-1 text-xs leading-5 text-zinc-500">
-                {compilerMode === "cloud"
-                  ? "Cloud TeX Live uses your Google Cloud Run microservice with all fonts and packages."
-                  : "Compilation runs only when you request it. Local WASM compiles directly in the browser."}
+                Compilation compiles your resume into an ATS-vetted PDF via the TeX Live microservice.
               </p>
               <Button
                 className="mt-5 bg-zinc-950 text-white hover:bg-zinc-800"
                 onClick={() => void compile()}
                 disabled={compileStatus === "compiling"}
               >
-                {compileStatus === "compiling"
-                  ? "Starting compiler…"
-                  : compilerMode === "cloud"
-                  ? "Compile with Cloud Run"
-                  : "Compile locally"}
+                {compileStatus === "compiling" ? "Compiling PDF…" : "Compile to PDF"}
               </Button>
             </div>
           </div>
