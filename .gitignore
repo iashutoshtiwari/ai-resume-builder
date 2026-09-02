@@ -1,0 +1,29 @@
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+
+# testing and build output
+/coverage
+/test-results
+/playwright-report
+/.next
+/out
+
+# local environment
+.env*
+!.env.example
+
+# local tooling
+.impeccable/config.local.json
+.impeccable/review/
+.impeccable/mocks/
+
+# operating systems and logs
+.DS_Store
+Thumbs.db
+*.log
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
