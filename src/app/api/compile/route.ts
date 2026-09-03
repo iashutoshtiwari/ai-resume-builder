@@ -3,13 +3,13 @@ import { z } from "zod";
 export const runtime = "nodejs";
 
 const CompileRequestSchema = z.object({
-  source: z.string().min(1).max(2_000_000),
+  source: z.string().min(1).max(200_000, "This LaTeX document is too large to compile."),
   engine: z.enum(["pdflatex", "xelatex"]).optional().default("pdflatex"),
   files: z
     .array(
       z.object({
-        name: z.string().min(1).max(240),
-        content: z.string().max(10_000_000),
+        name: z.string().min(1).max(240).regex(/^[^\\/:*?"<>|]+$/, "Use a plain filename without folders."),
+        content: z.string().max(8_000_000),
       })
     )
     .optional(),
@@ -21,7 +21,7 @@ export async function GET() {
     return Response.json({
       available: false,
       configured: false,
-      message: "LATEX_COMPILER_URL environment variable is not configured.",
+      message: "PDF compilation is not configured for this environment.",
     });
   }
 
@@ -42,13 +42,13 @@ export async function GET() {
     return Response.json({
       available: false,
       configured: true,
-      message: `Compiler service returned HTTP ${res.status}`,
+      message: "PDF compilation is temporarily unavailable. Please try again shortly.",
     });
-  } catch (error) {
+  } catch {
     return Response.json({
       available: false,
       configured: true,
-      message: error instanceof Error ? error.message : "Unable to reach compiler service",
+      message: "PDF compilation is temporarily unavailable. Please try again shortly.",
     });
   }
 }
@@ -64,10 +64,10 @@ export async function POST(request: Request) {
           {
             code: "runtime",
             message:
-              "Remote LaTeX compiler is not configured. Set LATEX_COMPILER_URL in your environment or use the local WebAssembly compiler.",
+              "PDF compilation is not configured for this environment. You can still edit and download the LaTeX source.",
           },
         ],
-        logs: "LATEX_COMPILER_URL environment variable is empty.",
+        logs: "",
       },
       { status: 503 }
     );
@@ -116,16 +116,14 @@ export async function POST(request: Request) {
   } catch (error) {
     const isTimeout = error instanceof Error && error.name === "TimeoutError";
     const message = isTimeout
-      ? "Remote compilation timed out after 45 seconds (Cloud Run cold start or heavy document)."
-      : error instanceof Error
-      ? error.message
-      : "Failed to connect to remote LaTeX compiler.";
+      ? "PDF compilation took too long and was stopped. Please try again."
+      : "PDF compilation is temporarily unavailable. Please try again shortly.";
 
     return Response.json(
       {
         success: false,
         errors: [{ code: "runtime", message }],
-        logs: `Error forwarding to ${targetUrl}: ${message}`,
+        logs: "",
       },
       { status: isTimeout ? 504 : 502 }
     );

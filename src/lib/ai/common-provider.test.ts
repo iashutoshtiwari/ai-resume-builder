@@ -309,7 +309,7 @@ describe("CommonResumeAIProvider Execution (OpenRouter Backend)", () => {
       apiKey: "sk-or-test-key",
     });
 
-    await expect(provider.parseLatexResume("content")).rejects.toThrow(/credit error/i);
+    await expect(provider.parseLatexResume("content")).rejects.toThrow(/not have enough credit/i);
     // Should NOT retry or enter repair loop on 402
     expect(fetchSpy).toHaveBeenCalledTimes(1);
   });

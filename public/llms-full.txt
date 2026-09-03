@@ -7,7 +7,7 @@ AI Resume Builder is a privacy-first, evidence-grounded resume tailoring applica
 Traditional AI resume tools generate text in a black box, frequently inventing quantifiable accomplishments, falsifying skills, or outputting brittle multi-column documents that fail Applicant Tracking System (ATS) parsers. AI Resume Builder solves this through three core principles:
 1. **Schema as Source of Truth**: The resume data model is strictly validated via Zod (`ResumeSchema`). Output LaTeX code is generated deterministically from this schema.
 2. **Factuality & Evidence Grounding**: AI tailoring operates under strict constraints. Every bullet revision or addition must point directly to explicit evidence in the candidate's existing background. Revisions that invent ungrounded metrics or skills are rejected at the validator layer.
-3. **Local In-Browser Compilation**: Using the Siglum WebAssembly engine and TeX Live bundles, LaTeX documents compile to PDF directly inside the user's web browser, keeping personal data off remote compile servers.
+3. **Restricted Docker Compilation**: LaTeX documents compile through a dedicated TeX Live service with shell escape disabled, execution limits, and disposable request directories.
 
 ---
 
@@ -43,7 +43,7 @@ Traditional AI resume tools generate text in a black box, frequently inventing q
 - Resume data is converted into clean LaTeX markup via `renderResumeToLatex`.
 - Escapes all special characters (`&`, `%`, `$`, `#`, `_`, `{`, `}`, `~`, `^`, `\`).
 - Output uses standard LaTeX single-column semantic markup optimized for optical character recognition (OCR) and ATS parsers.
-- Compilation runs in a Web Worker using WebAssembly (Siglum engine with TeX Live 2025 bundles), requiring cross-origin isolation (`Cross-Origin-Opener-Policy: same-origin`, `Cross-Origin-Embedder-Policy: require-corp`).
+- Compilation runs through the configured `LATEX_COMPILER_URL` Docker service. The canonical renderer remains the preferred path; no arbitrary package download occurs during compilation.
 
 ### 5. Storage & Privacy
 - Resumes and compiled PDFs persist solely in browser `IndexedDB` (`idb`).
@@ -59,7 +59,7 @@ All API routes require server-side execution and validate payloads using Zod sch
 - `POST /api/ai/analyze-job`: Ingests job description and returns structured `JobDescriptionSchema`.
 - `POST /api/ai/tailor`: Compares candidate resume and job requirements, outputting validated atomic proposals.
 - `POST /api/ai/proofread`: Analyzes grammar, tone, action verbs, and conciseness.
-- `POST /api/compile`: Fallback or server-side TeX compilation when local browser compilation is not active.
+- `POST /api/compile`: Controlled proxy to the Docker TeX compilation service.
 
 ---
 

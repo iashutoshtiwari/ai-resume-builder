@@ -5,14 +5,17 @@ import { sampleJobDescription } from "@/features/jobs/fixtures/sample-job";
 
 const mocks = vi.hoisted(() => ({
   parseLatexResume: vi.fn(),
+  buildResume: vi.fn(),
   analyzeJob: vi.fn(),
   generateTailoringSuggestions: vi.fn(),
+  tailorResume: vi.fn(),
   proofreadResume: vi.fn(),
 }));
 
 vi.mock("@/lib/ai/factory", () => ({ getResumeAIProvider: () => mocks }));
 
 import { POST as parseResume } from "@/app/api/ai/parse-resume/route";
+import { POST as buildResume } from "@/app/api/ai/build-resume/route";
 import { POST as analyzeJob } from "@/app/api/ai/analyze-job/route";
 import { POST as tailor } from "@/app/api/ai/tailor/route";
 import { POST as proofread } from "@/app/api/ai/proofread/route";
@@ -42,6 +45,17 @@ describe("AI route contracts", () => {
     mocks.parseLatexResume.mockResolvedValue({ resume: sampleResume, confidence: "medium", warnings: [], importer: "ai" });
     mocks.analyzeJob.mockResolvedValue(analysis);
     mocks.generateTailoringSuggestions.mockResolvedValue({ changes: [], gaps: [] });
+    mocks.tailorResume.mockResolvedValue({
+      tailoredResume: sampleResume,
+      summary: "Tailored to role",
+      changes: [],
+      gaps: [],
+    });
+    mocks.buildResume.mockResolvedValue({
+      resume: sampleResume,
+      summary: "Built clean resume",
+      normalizedItemsCount: 5,
+    });
     mocks.proofreadResume.mockResolvedValue({ changes: [] });
   });
 
@@ -51,6 +65,25 @@ describe("AI route contracts", () => {
     expect(response.status).toBe(200);
     expect((await response.json()).resume.basics.name).toBe("Alex Morgan");
     expect(mocks.parseLatexResume).toHaveBeenCalledWith(latex);
+  });
+
+  it("builds a baseline resume from candidate profile", async () => {
+    const profile = {
+      version: 1,
+      personal: sampleResume.basics,
+      careerStage: "mid-level",
+      skills: sampleResume.skills,
+      experience: sampleResume.experience,
+      projects: sampleResume.projects,
+      education: sampleResume.education,
+      certifications: [],
+      achievements: [],
+    };
+    const response = await buildResume(
+      request({ profile, sections: ["skills", "experience", "projects", "education"] }),
+    );
+    expect(response.status).toBe(200);
+    expect((await response.json()).summary).toBe("Built clean resume");
   });
 
   it("rejects malformed and oversized input", async () => {

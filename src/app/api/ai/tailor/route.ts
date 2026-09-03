@@ -20,7 +20,15 @@ export async function POST(request: Request) {
     const input = await parseJsonRequest(request, InputSchema, 260_000);
     const guidance = retrieveGuidance({ task: "tailor", resume: input.resume, targetJob: input.targetJob });
     const key = await requestKey("tailor", { ...input, guidance });
-    const result = await dedupeRequest(key, () => getResumeAIProvider().generateTailoringSuggestions(input.resume, input.targetJob, input.analysis, input.resumeRevision, guidance));
+    const result = await dedupeRequest(key, () =>
+      getResumeAIProvider().tailorResume(
+        input.resume,
+        input.targetJob,
+        input.analysis,
+        input.resumeRevision,
+        guidance,
+      ),
+    );
     return Response.json(result);
   } catch (error) {
     return apiErrorResponse(error);

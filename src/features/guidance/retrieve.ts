@@ -1,23 +1,68 @@
 import { GUIDANCE_CORPUS, GUIDANCE_SNAPSHOT_VERSION } from "@/features/guidance/corpus";
-import type { GuidanceContext, GuidanceSection, GuidanceTask } from "@/features/guidance/schema";
+import { RESUME_KNOWLEDGE_BASE } from "@/features/guidance/knowledge";
+import type {
+  GuidanceChunk,
+  GuidanceContext,
+  GuidanceSection,
+  GuidanceTask,
+} from "@/features/guidance/schema";
 import type { TargetJob } from "@/features/jobs/schema";
-import type { Resume } from "@/features/resume/schema";
+import type { CareerStage, Resume } from "@/features/resume/schema";
 
 const TOKEN = /[a-z0-9+#.]{2,}/g;
-const STOP_WORDS = new Set(["and", "the", "for", "with", "from", "that", "this", "your", "you", "are", "our", "will", "into", "using"]);
+const STOP_WORDS = new Set([
+  "and",
+  "the",
+  "for",
+  "with",
+  "from",
+  "that",
+  "this",
+  "your",
+  "you",
+  "are",
+  "our",
+  "will",
+  "into",
+  "using",
+]);
 
 function tokens(value: string): Set<string> {
-  return new Set((value.toLowerCase().match(TOKEN) ?? []).filter((token) => !STOP_WORDS.has(token)));
+  return new Set(
+    (value.toLowerCase().match(TOKEN) ?? []).filter(
+      (token) => !STOP_WORDS.has(token),
+    ),
+  );
 }
 
 function resumeText(resume: Resume): string {
   return [
     resume.basics.headline,
-    ...resume.skills.flatMap((group) => [group.name, ...group.skills.map((skill) => skill.name)]),
-    ...resume.experience.flatMap((entry) => [entry.role, entry.company, ...entry.bullets.map((bullet) => bullet.text)]),
-    ...resume.projects.flatMap((project) => [project.name, project.description, ...project.technologies.map((technology) => technology.name), ...project.bullets.map((bullet) => bullet.text)]),
-    ...resume.education.flatMap((entry) => [entry.degree, entry.field, entry.institution, ...entry.details.map((detail) => detail.text)]),
-  ].filter(Boolean).join(" ");
+    resume.summary,
+    ...resume.skills.flatMap((group) => [
+      group.name,
+      ...group.skills.map((skill) => skill.name),
+    ]),
+    ...resume.experience.flatMap((entry) => [
+      entry.role,
+      entry.company,
+      ...entry.bullets.map((bullet) => bullet.text),
+    ]),
+    ...resume.projects.flatMap((project) => [
+      project.name,
+      project.description,
+      ...project.technologies.map((technology) => technology.name),
+      ...project.bullets.map((bullet) => bullet.text),
+    ]),
+    ...resume.education.flatMap((entry) => [
+      entry.degree,
+      entry.field,
+      entry.institution,
+      ...entry.details.map((detail) => detail.text),
+    ]),
+  ]
+    .filter(Boolean)
+    .join(" ");
 }
 
 export function retrieveGuidance(input: {
@@ -25,17 +70,21 @@ export function retrieveGuidance(input: {
   resume: Resume;
   targetJob?: TargetJob | null;
   section?: GuidanceSection;
+  careerStage?: CareerStage;
+  locale?: "india" | "us-canada" | "general";
   limit?: number;
 }): GuidanceContext {
-  const query = tokens(`${resumeText(input.resume)} ${input.targetJob?.role ?? ""} ${input.targetJob?.description ?? ""} ${input.section ?? ""} ${input.task}`);
+  const query = tokens(
+    `${resumeText(input.resume)} ${input.targetJob?.role ?? ""} ${input.targetJob?.description ?? ""} ${input.section ?? ""} ${input.task}`,
+  );
   const mandatory = GUIDANCE_CORPUS.filter((item) => item.mandatory);
   const limit = Math.min(Math.max(input.limit ?? 6, 1), 6);
-  const ranked = GUIDANCE_CORPUS
-    .filter((item) => !item.mandatory)
+  const ranked = GUIDANCE_CORPUS.filter((item) => !item.mandatory)
     .map((item) => {
       const titleAndGuidance = tokens(`${item.title} ${item.guidance}`);
       let score = item.tasks.includes(input.task) ? 12 : 0;
       if (input.section && item.sections.includes(input.section)) score += 10;
+      if (input.locale && item.applicability === input.locale) score += 8;
       for (const tag of item.tags) {
         if (query.has(tag.toLowerCase())) score += 6;
         for (const tagToken of tokens(tag)) if (query.has(tagToken)) score += 2;
@@ -48,5 +97,46 @@ export function retrieveGuidance(input: {
     .slice(0, limit)
     .map(({ item }) => item);
 
-  return { snapshotVersion: GUIDANCE_SNAPSHOT_VERSION, chunks: [...mandatory, ...ranked] };
+  return {
+    snapshotVersion: GUIDANCE_SNAPSHOT_VERSION,
+    chunks: [...mandatory, ...ranked],
+  };
+}
+
+export function getResumeGuidance(input: {
+  careerStage?: CareerStage;
+  locale?: "india" | "us-canada" | "general";
+  task: GuidanceTask;
+  sections?: GuidanceSection[];
+  limit?: number;
+}): GuidanceChunk[] {
+  const locale = input.locale ?? "india";
+  const limit = input.limit ?? 8;
+
+  const mandatory = RESUME_KNOWLEDGE_BASE.filter((k) => k.mandatory);
+  const scored = RESUME_KNOWLEDGE_BASE.filter((k) => !k.mandatory)
+    .map((chunk) => {
+      let score = 0;
+      if (chunk.tasks.includes(input.task)) score += 10;
+      if (chunk.locale === locale || chunk.locale === "general") score += 5;
+      if (
+        input.careerStage &&
+        chunk.careerStages?.includes(input.careerStage)
+      ) {
+        score += 12;
+      }
+      if (
+        input.sections &&
+        chunk.sections.some((s) => input.sections?.includes(s as GuidanceSection))
+      ) {
+        score += 8;
+      }
+      return { chunk, score };
+    })
+    .filter(({ score }) => score > 0)
+    .sort((a, b) => b.score - a.score || a.chunk.id.localeCompare(b.chunk.id))
+    .slice(0, limit)
+    .map(({ chunk }) => chunk);
+
+  return [...mandatory, ...scored];
 }

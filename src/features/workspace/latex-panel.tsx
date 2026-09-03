@@ -78,7 +78,7 @@ export function LatexPanel() {
         </div>
       )}
       <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-border px-5 py-2.5">
-        <label className="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-md border border-border px-3 text-xs font-medium transition-colors hover:bg-muted focus-within:ring-2 focus-within:ring-primary/40">
+        <label className="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-none border border-border px-3 text-xs font-medium transition-colors hover:bg-muted focus-within:ring-2 focus-within:ring-primary/40">
           <FilePlus2 className="size-3.5" /> Add project files
           <input
             type="file"

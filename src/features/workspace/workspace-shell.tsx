@@ -38,7 +38,7 @@ import {
 } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { ChangesPanel, JobPanel, ProofreadPanel } from "@/features/workspace/ai-panels";
+import { ChangesPanel, JobPanel } from "@/features/workspace/ai-panels";
 import { GuidancePanel } from "@/features/guidance/guidance-panel";
 import { LatexPanel } from "@/features/workspace/latex-panel";
 import { FormatPanel } from "@/features/presentation/format-panel";
@@ -64,7 +64,6 @@ const nav: Array<{ id: WorkspacePanel; label: string; icon: typeof LayoutDashboa
   { id: "guidance", label: "Guidance", icon: ShieldCheck, group: "Resume" },
   { id: "job", label: "Target Job", icon: Sparkles, group: "AI Tailoring" },
   { id: "changes", label: "Diffs & Changes", icon: FileCheck2, group: "AI Tailoring" },
-  { id: "proofread", label: "Proofread", icon: FilePenLine, group: "AI Tailoring" },
   { id: "latex", label: "LaTeX Source", icon: Code2, group: "Source" },
 ];
 
@@ -79,7 +78,6 @@ function CurrentPanel({ aiConfigured }: { aiConfigured: boolean }) {
   if (panel === "guidance") return <GuidancePanel />;
   if (panel === "job") return <JobPanel aiConfigured={aiConfigured} />;
   if (panel === "changes") return <ChangesPanel />;
-  if (panel === "proofread") return <ProofreadPanel aiConfigured={aiConfigured} />;
   return <LatexPanel />;
 }
 
@@ -169,7 +167,7 @@ export function WorkspaceShell({ aiConfigured }: { aiConfigured: boolean }) {
 
   const activeMobileTab: "editor" | "ai" | "preview" =
     mobileTabOverride ??
-    (panel === "job" || panel === "changes" || panel === "proofread" ? "ai" : "editor");
+    (panel === "job" || panel === "changes" ? "ai" : "editor");
 
   if (!hydrated) {
     return (
@@ -208,7 +206,7 @@ export function WorkspaceShell({ aiConfigured }: { aiConfigured: boolean }) {
           <div className="min-[1200px]:hidden">
             <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
               <SheetTrigger asChild>
-                <Button size="icon" variant="ghost" className="size-8" aria-label="Open menu">
+                <Button size="icon-sm" variant="ghost" className="size-8" aria-label="Open menu">
                   <Menu className="size-4" />
                 </Button>
               </SheetTrigger>
@@ -228,7 +226,7 @@ export function WorkspaceShell({ aiConfigured }: { aiConfigured: boolean }) {
                           setPanel(item.id);
                           setDrawerOpen(false);
                         }}
-                        className={`mb-1 flex h-9 w-full items-center gap-2.5 rounded-sm px-3 text-left text-xs transition-colors ${
+                        className={`mb-1 flex h-9 w-full items-center gap-2.5 rounded-none px-3 text-left text-xs transition-colors ${
                           panel === item.id
                             ? "bg-primary/10 font-medium text-foreground"
                             : "text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -260,10 +258,10 @@ export function WorkspaceShell({ aiConfigured }: { aiConfigured: boolean }) {
             {saveStatus === "saving" ? "Saving…" : saveStatus === "error" ? "Save error" : "Saved"}
           </span>
 
-          <Button size="icon" variant="ghost" className="size-8" disabled={past.length === 0} onClick={undo} aria-label="Undo">
+          <Button size="icon-sm" variant="ghost" className="size-8" disabled={past.length === 0} onClick={undo} aria-label="Undo">
             <Undo2 className="size-3.5" />
           </Button>
-          <Button size="icon" variant="ghost" className="size-8" disabled={future.length === 0} onClick={redo} aria-label="Redo">
+          <Button size="icon-sm" variant="ghost" className="size-8" disabled={future.length === 0} onClick={redo} aria-label="Redo">
             <Redo2 className="size-3.5" />
           </Button>
 
@@ -272,7 +270,7 @@ export function WorkspaceShell({ aiConfigured }: { aiConfigured: boolean }) {
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
-                  size="icon"
+                  size="icon-sm"
                   variant={desktopView === "split" ? "secondary" : "ghost"}
                   className="size-8"
                   onClick={() => setDesktopView("split")}
@@ -287,7 +285,7 @@ export function WorkspaceShell({ aiConfigured }: { aiConfigured: boolean }) {
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
-                  size="icon"
+                  size="icon-sm"
                   variant={desktopView === "editor" ? "secondary" : "ghost"}
                   className="size-8"
                   onClick={() => setDesktopView("editor")}
@@ -302,7 +300,7 @@ export function WorkspaceShell({ aiConfigured }: { aiConfigured: boolean }) {
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
-                  size="icon"
+                  size="icon-sm"
                   variant={desktopView === "preview" ? "secondary" : "ghost"}
                   className="size-8"
                   onClick={() => setDesktopView("preview")}
@@ -317,8 +315,8 @@ export function WorkspaceShell({ aiConfigured }: { aiConfigured: boolean }) {
 
           <Tooltip>
             <TooltipTrigger asChild>
-              <div className="hidden items-center gap-1.5 rounded border border-border bg-card/60 px-2 py-1 font-mono text-[9px] uppercase tracking-wider text-muted-foreground md:inline-flex">
-                <span className="size-1.5 rounded-full bg-emerald-500" />
+              <div className="hidden items-center gap-1.5 rounded-none border border-border bg-card/60 px-2 py-1 font-mono text-[9px] uppercase tracking-wider text-muted-foreground md:inline-flex">
+                <span className="size-1.5 rounded-none bg-emerald-500" />
                 TeX Live
               </div>
             </TooltipTrigger>
@@ -368,9 +366,9 @@ export function WorkspaceShell({ aiConfigured }: { aiConfigured: boolean }) {
           onValueChange={(val) => {
             const next = val as "editor" | "ai" | "preview";
             setMobileTabOverride(next);
-            if (next === "editor" && (panel === "job" || panel === "changes" || panel === "proofread")) {
+            if (next === "editor" && (panel === "job" || panel === "changes")) {
               setPanel("overview");
-            } else if (next === "ai" && (panel !== "job" && panel !== "changes" && panel !== "proofread")) {
+            } else if (next === "ai" && (panel !== "job" && panel !== "changes")) {
               setPanel("job");
             }
           }}
@@ -418,7 +416,7 @@ export function WorkspaceShell({ aiConfigured }: { aiConfigured: boolean }) {
           {/* Sub-navigation for AI Tailoring */}
           {activeMobileTab === "ai" && (
             <div className="flex gap-1 overflow-x-auto border-b border-border bg-background px-3 py-1.5">
-              {(["job", "changes", "proofread"] as WorkspacePanel[]).map((id) => (
+              {(["job", "changes"] as WorkspacePanel[]).map((id) => (
                 <Button
                   key={id}
                   size="sm"
@@ -429,7 +427,7 @@ export function WorkspaceShell({ aiConfigured }: { aiConfigured: boolean }) {
                     setPanel(id);
                   }}
                 >
-                  {id === "job" ? "Target Job" : id === "changes" ? `Diffs (${pendingChanges})` : "Proofread"}
+                  {id === "job" ? "Target Job" : `Diffs (${pendingChanges})`}
                 </Button>
               ))}
             </div>
@@ -451,4 +449,3 @@ export function WorkspaceShell({ aiConfigured }: { aiConfigured: boolean }) {
     </main>
   );
 }
-

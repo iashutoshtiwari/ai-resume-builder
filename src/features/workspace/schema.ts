@@ -5,6 +5,9 @@ import { ProofreadingChangeSchema, ResumeChangeSchema, UnsupportedGapSchema } fr
 import { GuidanceContextSchema } from "@/features/guidance/schema";
 import { ResumePresentationSchema } from "@/features/presentation/schema";
 
+import { CandidateProfileSchema } from "@/features/resume/candidate-profile";
+import { CareerStageSchema } from "@/features/resume/schema";
+
 export const LatexProjectFileSchema = z.object({
   id: z.string().min(1).max(160),
   name: z.string().min(1).max(240).regex(/^[^\\/:*?"<>|]+$/, "Use a plain filename without folders."),
@@ -17,6 +20,13 @@ export const WorkspaceSchema = z.object({
   name: z.string().min(1).max(160),
   resume: ResumeSchema,
   originalResume: ResumeSchema,
+  baselineResume: ResumeSchema.optional(),
+  tailoredResume: ResumeSchema.nullable().optional(),
+  tailoringSummary: z.string().optional(),
+  candidateProfile: CandidateProfileSchema.optional(),
+  locale: z.enum(["india", "us-canada"]).default("india"),
+  careerStageOverride: CareerStageSchema.nullable().optional(),
+  activeVariant: z.enum(["original", "current", "tailored"]).default("current"),
   originalLatex: z.string().max(200_000).nullable(),
   generatedLatex: z.string().max(200_000),
   manualLatex: z.string().max(200_000).nullable(),
@@ -32,7 +42,7 @@ export const WorkspaceSchema = z.object({
   jobComparison: JobComparisonSchema.nullable(),
   tailoringChanges: z.array(ResumeChangeSchema),
   unsupportedGaps: z.array(UnsupportedGapSchema),
-  proofreadingChanges: z.array(ProofreadingChangeSchema),
+  proofreadingChanges: z.array(ProofreadingChangeSchema).default([]),
   resumeRevision: z.string().min(1),
   lastCompiledSourceHash: z.string().nullable(),
   lastCompiledPageCount: z.number().int().positive().max(100).nullable(),

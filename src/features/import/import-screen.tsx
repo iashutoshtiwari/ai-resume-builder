@@ -14,6 +14,7 @@ import { useWorkspaceStore } from "@/store/workspace-store";
 import {
   ArrowRight,
   Check,
+  CircleDashed,
   FileCode2,
   FileText,
   FileType,
@@ -24,11 +25,47 @@ import {
   Sparkles,
   Upload,
 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  detectCareerStageDetailed,
+  getRecommendedSections,
+  STAGE_LABEL,
+  type CareerStage,
+} from "@/features/assessment/scoring";
+import type { RenderedSection } from "@/features/presentation/schema";
+import { resumeToCandidateProfile } from "@/features/resume/candidate-profile";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 type ApiError = { error?: { message?: string } };
+
+const ALL_SECTION_OPTIONS: Array<{ id: RenderedSection; label: string }> = [
+  { id: "summary", label: "Professional Summary" },
+  { id: "experience", label: "Work Experience" },
+  { id: "skills", label: "Technical Skills" },
+  { id: "projects", label: "Engineering Projects" },
+  { id: "education", label: "Education" },
+  { id: "certifications", label: "Certifications" },
+  { id: "achievements", label: "Achievements & Honors" },
+];
+
+const STAGES: CareerStage[] = [
+  "student",
+  "new-graduate",
+  "early-career",
+  "mid-level",
+  "senior",
+  "staff-principal",
+  "career-changer",
+  "returning-professional",
+];
 
 export function ImportScreen({
   canonicalLatex,
@@ -46,6 +83,10 @@ export function ImportScreen({
   );
   const [busy, setBusy] = useState(false);
   const [loadingStep, setLoadingStep] = useState<string>("");
+  const [selectedStage, setSelectedStage] = useState<CareerStage | null>(null);
+  const [selectedLocale, setSelectedLocale] = useState<"india" | "us-canada">("india");
+  const [selectedSections, setSelectedSections] = useState<RenderedSection[]>([]);
+  const [isBuilding, setIsBuilding] = useState(false);
   const {
     hydrate,
     hydrated,
@@ -96,16 +137,6 @@ export function ImportScreen({
     }
   }
 
-  async function begin() {
-    if (!result) return;
-    await startWorkspace(
-      result.resume,
-      detectedFormat === "latex" ? source : null,
-      `${result.resume.basics.name}'s Resume`,
-    );
-    router.push("/workspace");
-  }
-
   async function onFile(file?: File) {
     if (!file) return;
     const extension = file.name.split(".").pop()?.toLowerCase();
@@ -147,10 +178,99 @@ export function ImportScreen({
   }
 
   if (result) {
-    const count =
-      result.resume.experience.length +
-      result.resume.projects.length +
-      result.resume.education.length;
+    const currentResult = result;
+    const profile = resumeToCandidateProfile(currentResult.resume);
+    const stageInfo = detectCareerStageDetailed(currentResult.resume);
+    const activeStage = selectedStage ?? stageInfo.stage;
+    const sectionRecs = getRecommendedSections(activeStage, currentResult.resume);
+    const activeSections = selectedSections.length > 0 ? selectedSections : sectionRecs.recommended;
+
+    const totalBullets = [
+      ...currentResult.resume.experience.flatMap((e) => e.bullets),
+      ...currentResult.resume.projects.flatMap((p) => p.bullets),
+    ].length;
+    const totalSkills = currentResult.resume.skills.flatMap((g) => g.skills).length;
+    const certsCount = currentResult.resume.certifications?.length ?? 0;
+    const achCount = currentResult.resume.achievements?.length ?? 0;
+
+    const isLowDensity =
+      source.trim().length < 150 ||
+      currentResult.warnings.some(
+        (w) =>
+          w.message.toLowerCase().includes("ocr") ||
+          w.message.toLowerCase().includes("scan"),
+      );
+
+    async function handleBuildResume() {
+      setIsBuilding(true);
+      setLoadingStep(
+        "AI is compiling and polishing your resume according to engineering standards...",
+      );
+      try {
+        const response = await fetch("/api/ai/build-resume", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            profile: { ...profile, careerStage: activeStage },
+            sections: activeSections,
+            locale: selectedLocale,
+          }),
+        });
+        const body = await response.json();
+        if (!response.ok)
+          throw new Error(body.error?.message ?? "Resume build failed.");
+        await startWorkspace(
+          body.resume,
+          detectedFormat === "latex" ? source : null,
+          `${body.resume.basics.name || "Candidate"}'s Resume`,
+          profile,
+          selectedLocale,
+        );
+        toast.success("Baseline resume successfully built!");
+        router.push("/workspace");
+      } catch (error) {
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : "Build failed. Opening extracted resume.",
+        );
+        await startWorkspace(
+          currentResult.resume,
+          detectedFormat === "latex" ? source : null,
+          `${currentResult.resume.basics.name || "Candidate"}'s Resume`,
+          profile,
+          selectedLocale,
+        );
+        router.push("/workspace");
+      } finally {
+        setIsBuilding(false);
+        setLoadingStep("");
+      }
+    }
+
+    async function handleOpenRaw() {
+      await startWorkspace(
+        currentResult.resume,
+        detectedFormat === "latex" ? source : null,
+        `${currentResult.resume.basics.name || "Candidate"}'s Resume`,
+        profile,
+        selectedLocale,
+      );
+      router.push("/workspace");
+    }
+
+    function toggleSection(sectionId: RenderedSection) {
+      if (activeSections.includes(sectionId)) {
+        if (activeSections.length > 1) {
+          setSelectedSections(activeSections.filter((s) => s !== sectionId));
+        } else {
+          toast.error("At least one section must remain enabled.");
+        }
+      } else {
+        setSelectedSections([...activeSections, sectionId]);
+      }
+    }
+
     return (
       <main className="mx-auto flex min-h-screen max-w-6xl items-center px-4 py-8 sm:px-6 sm:py-10">
         <section className="w-full border border-border bg-card shadow-2xl">
@@ -158,7 +278,7 @@ export function ImportScreen({
             <div>
               <div className="flex items-center gap-2">
                 <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-primary">
-                  Structured Import Review
+                  Extraction Review
                 </p>
                 {detectedFormat && (
                   <Badge
@@ -170,18 +290,26 @@ export function ImportScreen({
                 )}
               </div>
               <h1 className="mt-1 text-xl font-semibold tracking-tight sm:text-2xl">
-                Check the extracted information
+                Review Extracted Profile & Build Baseline
               </h1>
             </div>
-            <Badge
-              variant="outline"
-              className="w-fit gap-1.5 self-start sm:self-auto"
-            >
-              <Check className="size-3 text-emerald-500" /> {result.confidence}{" "}
-              confidence
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="gap-1.5">
+                <Check className="size-3 text-emerald-500" /> {result.confidence}{" "}
+                confidence
+              </Badge>
+            </div>
           </div>
-          <div className="grid gap-0 lg:grid-cols-[1fr_340px]">
+
+          {isLowDensity && (
+            <div className="border-b border-amber-500/30 bg-amber-500/10 px-5 py-3 text-xs text-amber-200">
+              ⚠️ Low text density detected. If this is a scanned/photographed
+              document, consider pasting raw text or uploading an exported text
+              PDF/DOCX for best accuracy.
+            </div>
+          )}
+
+          <div className="grid gap-0 lg:grid-cols-[1fr_360px]">
             <div className="space-y-6 p-5 sm:p-6 lg:border-r lg:border-border">
               <div>
                 <p className="text-2xl font-semibold tracking-tight sm:text-3xl">
@@ -202,85 +330,245 @@ export function ImportScreen({
                   </p>
                 )}
               </div>
-              <div className="grid grid-cols-2 gap-px border border-border bg-border sm:grid-cols-4">
-                {[
-                  ["Experience", result.resume.experience.length],
-                  ["Projects", result.resume.projects.length],
-                  ["Skill groups", result.resume.skills.length],
-                  ["Education", result.resume.education.length],
-                ].map(([label, value]) => (
-                  <div key={label} className="bg-card p-3 sm:p-4">
-                    <p className="font-mono text-xl sm:text-2xl">{value}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      {label}
-                    </p>
-                  </div>
-                ))}
-              </div>
+
               <div>
                 <h2 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                  Detected Sections
+                  Extracted Evidence
                 </h2>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {[
-                    ...result.resume.experience.map((item) => item.role),
-                    ...result.resume.projects.map((item) => item.name),
-                    ...result.resume.education.map((item) => item.institution),
-                  ]
-                    .slice(0, 10)
-                    .map((label, index) => (
-                      <Badge key={`${label}-${index}`} variant="secondary">
-                        {label}
+                <div className="mt-3 grid grid-cols-2 gap-px border border-border bg-border sm:grid-cols-3">
+                  <div className="bg-card p-3 sm:p-4">
+                    <p className="font-mono text-xl sm:text-2xl">
+                      {result.resume.experience.length}
+                    </p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      Work Experiences ({totalBullets} bullets)
+                    </p>
+                  </div>
+                  <div className="bg-card p-3 sm:p-4">
+                    <p className="font-mono text-xl sm:text-2xl">
+                      {result.resume.projects.length}
+                    </p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      Engineering Projects
+                    </p>
+                  </div>
+                  <div className="bg-card p-3 sm:p-4">
+                    <p className="font-mono text-xl sm:text-2xl">
+                      {result.resume.education.length}
+                    </p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      Education Degrees
+                    </p>
+                  </div>
+                  <div className="bg-card p-3 sm:p-4">
+                    <p className="font-mono text-xl sm:text-2xl">
+                      {totalSkills}
+                    </p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      Technical Skills ({result.resume.skills.length} groups)
+                    </p>
+                  </div>
+                  <div className="bg-card p-3 sm:p-4">
+                    <p className="font-mono text-xl sm:text-2xl">
+                      {certsCount}
+                    </p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      Certifications
+                    </p>
+                  </div>
+                  <div className="bg-card p-3 sm:p-4">
+                    <p className="font-mono text-xl sm:text-2xl">
+                      {achCount}
+                    </p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      Achievements / Honors
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-none border border-border bg-background/50 p-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                        Detected Career Stage
+                      </span>
+                      <Badge variant="outline">
+                        {STAGE_LABEL[stageInfo.stage]}
                       </Badge>
-                    ))}
-                  {count === 0 && (
-                    <span className="text-sm text-muted-foreground">
-                      No repeatable sections detected.
-                    </span>
-                  )}
+                    </div>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {stageInfo.explanation}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">Tier:</span>
+                    <Select
+                      value={activeStage}
+                      onValueChange={(val) => {
+                        const newStage = val as CareerStage;
+                        setSelectedStage(newStage);
+                        setSelectedSections(
+                          getRecommendedSections(newStage, result.resume)
+                            .recommended,
+                        );
+                      }}
+                    >
+                      <SelectTrigger className="h-8 w-44 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {STAGES.map((stage) => (
+                          <SelectItem key={stage} value={stage} className="text-xs">
+                            {STAGE_LABEL[stage]}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    Included Resume Sections
+                  </h2>
+                  <span className="text-[11px] text-muted-foreground">
+                    {activeSections.length} sections selected
+                  </span>
+                </div>
+                <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                  {ALL_SECTION_OPTIONS.map((sec) => {
+                    const isSelected = activeSections.includes(sec.id);
+                    const isRec = sectionRecs.recommended.includes(sec.id);
+                    return (
+                      <button
+                        type="button"
+                        key={sec.id}
+                        onClick={() => toggleSection(sec.id)}
+                        className={`flex items-center justify-between rounded-none border p-2.5 text-left text-xs transition-colors ${
+                          isSelected
+                            ? "border-primary/50 bg-primary/10 text-foreground"
+                            : "border-border bg-card text-muted-foreground hover:border-border/80"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <div
+                            className={`flex size-4 items-center justify-center rounded-none border ${
+                              isSelected
+                                ? "border-primary bg-primary text-primary-foreground"
+                                : "border-muted-foreground/40"
+                            }`}
+                          >
+                            {isSelected && <Check className="size-3" />}
+                          </div>
+                          <span>{sec.label}</span>
+                        </div>
+                        {isRec && (
+                          <span className="font-mono text-[9px] uppercase tracking-wider text-primary">
+                            Recommended
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             </div>
-            <aside className="space-y-5 bg-background/40 p-5 sm:p-6">
-              <div>
-                <h2 className="text-sm font-medium">Extraction Notes</h2>
-                {result.warnings.length ? (
-                  <ul className="mt-3 space-y-2 text-xs text-muted-foreground">
-                    {result.warnings.map((warning) => (
-                      <li
-                        key={warning.code}
-                        className="border-l-2 border-warning pl-3"
-                      >
-                        {warning.message}
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="mt-3 text-xs text-muted-foreground">
-                    All expected resume entities were mapped into the structured
-                    schema.
+
+            <aside className="flex flex-col justify-between space-y-5 bg-background/40 p-5 sm:p-6">
+              <div className="space-y-5">
+                <div>
+                  <h2 className="text-sm font-medium">Hiring Locale Preference</h2>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Tunes section emphasis, degree terminology, and date formatting.
                   </p>
-                )}
+                  <div className="mt-3 flex gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={selectedLocale === "india" ? "default" : "outline"}
+                      className="flex-1 text-xs"
+                      onClick={() => setSelectedLocale("india")}
+                    >
+                      India (Default)
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={selectedLocale === "us-canada" ? "default" : "outline"}
+                      className="flex-1 text-xs"
+                      onClick={() => setSelectedLocale("us-canada")}
+                    >
+                      US / Canada
+                    </Button>
+                  </div>
+                </div>
+
+                <div>
+                  <h2 className="text-sm font-medium">Extraction Notes</h2>
+                  {result.warnings.length ? (
+                    <ul className="mt-3 space-y-2 text-xs text-muted-foreground">
+                      {result.warnings.map((warning) => (
+                        <li
+                          key={warning.code}
+                          className="border-l-2 border-warning pl-3"
+                        >
+                          {warning.message}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="mt-3 text-xs text-muted-foreground">
+                      All expected resume entities were mapped into the structured
+                      schema.
+                    </p>
+                  )}
+                </div>
               </div>
-              <div className="space-y-2 pt-2">
+
+              <div className="space-y-2 pt-4">
                 <Button
                   className="w-full justify-between"
-                  onClick={() => void begin()}
+                  disabled={isBuilding}
+                  onClick={() => void handleBuildResume()}
                 >
-                  Open Workspace <ArrowRight className="size-4" />
+                  {isBuilding ? (
+                    <>
+                      <CircleDashed className="animate-spin" /> Building resume…
+                    </>
+                  ) : (
+                    <>
+                      <span className="flex items-center gap-1.5">
+                        <Sparkles className="size-4" /> Build My Resume
+                      </span>
+                      <ArrowRight className="size-4" />
+                    </>
+                  )}
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full text-xs"
+                  disabled={isBuilding}
+                  onClick={() => void handleOpenRaw()}
+                >
+                  Skip AI Polish & Open Raw
                 </Button>
                 <Button
                   variant="ghost"
                   className="w-full text-xs"
+                  disabled={isBuilding}
                   onClick={() => setResult(null)}
                 >
                   Upload a different file
                 </Button>
+                <p className="text-center text-[10px] text-muted-foreground">
+                  Baseline resume compiled deterministically using our canonical
+                  LaTeX engine.
+                </p>
               </div>
-              <p className="text-[11px] leading-5 text-muted-foreground">
-                Your resume is converted into our clean LaTeX template and
-                compiled directly in your browser.
-              </p>
             </aside>
           </div>
         </section>
@@ -298,7 +586,7 @@ export function ImportScreen({
           <span className="text-sm font-semibold">AI Resume Builder</span>
         </div>
         <Badge variant="outline" className="font-mono text-[10px]">
-          v0.1 · PDF + DOCX + LaTeX
+          v0.2 · PDF + DOCX + LaTeX
         </Badge>
       </header>
 
@@ -501,8 +789,8 @@ export function ImportScreen({
 
           <div className="border-t border-border px-5 py-3.5 text-xs leading-5 text-muted-foreground">
             {aiConfigured
-              ? "Text extraction and PDF compilation stay in your browser. AI parsing and tailoring use the configured AI provider."
-              : "PDF, DOCX, and text structuring require an API key (GEMINI_API_KEY or OPENROUTER_API_KEY). Known-template LaTeX import, editing, compilation, and exports remain available."}
+              ? "Text extraction happens locally. AI parsing and tailoring use the configured AI provider; PDF compilation uses the dedicated service."
+              : "PDF, DOCX, and text structuring require an API key (GEMINI_API_KEY or OPENROUTER_API_KEY). LaTeX editing and source exports remain available."}
           </div>
         </section>
       </div>

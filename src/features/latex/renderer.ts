@@ -87,6 +87,10 @@ function renderHeader(resume: Resume, presentation: ResumePresentation): string[
 export function renderResumeToLatex(resume: Resume, presentation: ResumePresentation = DEFAULT_PRESENTATION): string {
   const sections = new Map<RenderedSection, string>();
 
+  if (resume.summary?.trim()) {
+    sections.set("summary", `\\section*{Summary}\n${escapeLatexText(resume.summary.trim())}`);
+  }
+
   const activeSkills = resume.skills.filter((group) => group.name.trim() || group.skills.length > 0);
   if (activeSkills.length > 0) {
     const skillLines = activeSkills.map((group) => {
@@ -127,6 +131,27 @@ export function renderResumeToLatex(resume: Resume, presentation: ResumePresenta
       return [`\\textbf{${escapeLatexText(entry.institution)}} -- ${escapeLatexText(entry.degree)}${field}${location}${dates ? ` \\hfill ${dates}` : ""}`, ...details].join(" \\\\\n");
     }).filter((block) => block.trim().length > 0).join(" \\\\\n");
     if (education) sections.set("education", `\\section*{Education}\n${education}`);
+  }
+
+  const activeCerts = (resume.certifications ?? []).filter((cert) => cert.name.trim());
+  if (activeCerts.length > 0) {
+    const certLines = activeCerts.map((cert) => {
+      const issuer = cert.issuer ? ` -- ${escapeLatexText(cert.issuer)}` : "";
+      const date = cert.date ? ` \\hfill ${escapeLatexText(cert.date)}` : "";
+      const link = cert.url ? ` (${renderLink("Verify", cert.url)})` : "";
+      return `\\textbf{${escapeLatexText(cert.name)}}${issuer}${link}${date} \\\\`;
+    }).join("\n");
+    sections.set("certifications", `\\section*{Certifications}\n${certLines}`);
+  }
+
+  const activeAchievements = (resume.achievements ?? []).filter((ach) => ach.title.trim());
+  if (activeAchievements.length > 0) {
+    const achLines = activeAchievements.map((ach) => {
+      const desc = ach.description ? `: ${escapeLatexText(ach.description)}` : "";
+      const date = ach.date ? ` \\hfill ${escapeLatexText(ach.date)}` : "";
+      return `\\textbf{${escapeLatexText(ach.title)}}${desc}${date} \\\\`;
+    }).join("\n");
+    sections.set("achievements", `\\section*{Achievements}\n${achLines}`);
   }
 
   const sectionGap = DENSITY[presentation.density].sectionGap + (presentation.templateId === "compact" ? -1 : 0);

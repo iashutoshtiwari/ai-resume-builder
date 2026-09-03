@@ -1,7 +1,7 @@
 export type CompilerFile = { name: string; content: string | Uint8Array };
 
 export type NormalizedCompilerError = {
-  code: "unsupported-browser" | "unsupported-package" | "memory" | "latex" | "runtime";
+  code: "unsupported-package" | "memory" | "latex" | "timeout" | "unavailable" | "runtime";
   message: string;
   line?: number;
 };
@@ -23,11 +23,13 @@ function normalizeError(message: string, logs: string): NormalizedCompilerError 
   const line = Number(logs.match(/(?:l\.|line\s+)(\d+)/i)?.[1]) || undefined;
   const lower = `${message}\n${logs}`.toLowerCase();
   if (lower.includes("not found") || lower.includes("missing package")) {
-    return { code: "unsupported-package", message, line };
+    return { code: "unsupported-package", message: "This document uses a LaTeX package that is not available in the current compiler.", line };
   }
   if (lower.includes("memory") || lower.includes("allocation") || lower.includes("capacity exceeded")) {
     return { code: "memory", message: "Memory limit reached while compiling.", line };
   }
+  if (lower.includes("timeout") || lower.includes("timed out")) return { code: "timeout", message: "PDF compilation took too long and was stopped. Try a smaller document or the default template.", line };
+  if (lower.includes("not configured") || lower.includes("temporarily unavailable") || lower.includes("failed to fetch")) return { code: "unavailable", message: "PDF compilation is temporarily unavailable. Please try again shortly.", line };
   return { code: "latex", message, line };
 }
 
@@ -88,10 +90,9 @@ export class RemoteLatexCompiler implements LatexCompiler {
         };
       }
 
-      const errors: NormalizedCompilerError[] =
-        Array.isArray(data.errors) && data.errors.length > 0
-          ? data.errors
-          : [normalizeError(data.error || "Remote compilation failed.", data.logs || "")];
+      const errors: NormalizedCompilerError[] = Array.isArray(data.errors) && data.errors.length > 0
+        ? data.errors.map((error: { code?: string; message?: string; line?: number }) => normalizeError(error.message || "Compilation failed.", data.logs || ""))
+        : [normalizeError(data.error || "Remote compilation failed.", data.logs || "")];
 
       return {
         success: false,

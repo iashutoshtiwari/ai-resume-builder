@@ -7,8 +7,10 @@ import crypto from "node:crypto";
 import { spawn } from "node:child_process";
 
 const PORT = Number(process.env.PORT) || 8080;
-const MAX_PAYLOAD_BYTES = 25 * 1024 * 1024; // 25 MB max body size
-const COMPILE_TIMEOUT_MS = 35_000; // 35s max compile time
+const MAX_PAYLOAD_BYTES = 10 * 1024 * 1024;
+const MAX_SOURCE_BYTES = 200 * 1024;
+const MAX_FILES = 40;
+const COMPILE_TIMEOUT_MS = 25_000;
 
 function sendJson(res, statusCode, data) {
   const json = JSON.stringify(data);
@@ -43,9 +45,10 @@ function parseLatexErrors(logs) {
         }
       }
 
+      const lowerMessage = message.toLowerCase();
       errors.push({
-        code: "latex",
-        message,
+        code: lowerMessage.includes("file `") && lowerMessage.includes("not found") ? "unsupported-package" : "latex",
+        message: lowerMessage.includes("undefined control sequence") ? "There's an invalid LaTeX command in this document." : lowerMessage.includes("not found") ? "This document uses a LaTeX package or file that isn't available in the current compiler." : "We couldn't compile this LaTeX document.",
         line: lineNum,
       });
     }
@@ -73,7 +76,7 @@ function parseLatexErrors(logs) {
 
     errors.push({
       code,
-      message: "LaTeX compilation failed. Review logs for details.",
+      message: code === "unsupported-package" ? "This document uses a LaTeX package or file that isn't available in the current compiler." : "We couldn't compile this LaTeX document.",
     });
   }
 
@@ -87,7 +90,7 @@ async function handleCompile(req, res) {
   for await (const chunk of req) {
     bytesReceived += chunk.length;
     if (bytesReceived > MAX_PAYLOAD_BYTES) {
-      sendJson(res, 413, { error: "Payload too large. Max 25 MB allowed." });
+    sendJson(res, 413, { success: false, errors: [{ code: "resource-limit", message: "This LaTeX document is too large to compile." }], logs: "" });
       return;
     }
     body += chunk;
@@ -97,13 +100,21 @@ async function handleCompile(req, res) {
   try {
     payload = JSON.parse(body);
   } catch {
-    sendJson(res, 400, { error: "Invalid JSON body." });
+    sendJson(res, 400, { success: false, errors: [{ code: "runtime", message: "The compilation request was invalid." }], logs: "" });
     return;
   }
 
   const { source, engine = "pdflatex", files } = payload;
   if (!source || typeof source !== "string") {
-    sendJson(res, 400, { error: "Field 'source' is required and must be a string." });
+    sendJson(res, 400, { success: false, errors: [{ code: "runtime", message: "A LaTeX source document is required." }], logs: "" });
+    return;
+  }
+  if (Buffer.byteLength(source, "utf8") > MAX_SOURCE_BYTES) {
+    sendJson(res, 413, { success: false, errors: [{ code: "resource-limit", message: "This LaTeX document is too large to compile." }], logs: "" });
+    return;
+  }
+  if (files && (!Array.isArray(files) || files.length > MAX_FILES)) {
+    sendJson(res, 400, { success: false, errors: [{ code: "resource-limit", message: "Too many supporting files were provided for this compilation." }], logs: "" });
     return;
   }
 
@@ -126,6 +137,7 @@ async function handleCompile(req, res) {
 
       for (const [name, content] of entries) {
         if (!name || typeof name !== "string") continue;
+        if (name !== path.basename(name)) continue;
         const safeName = path.basename(name);
         const targetPath = path.join(compileDir, safeName);
 
@@ -159,12 +171,17 @@ async function handleCompile(req, res) {
       "main.tex",
     ];
 
-    const logs = await new Promise((resolve) => {
+    const { logs, timedOut } = await new Promise((resolve) => {
       let output = "";
+      let timedOut = false;
       const proc = spawn("latexmk", args, {
         cwd: compileDir,
-        timeout: COMPILE_TIMEOUT_MS,
       });
+
+      const timer = setTimeout(() => {
+        timedOut = true;
+        proc.kill("SIGKILL");
+      }, COMPILE_TIMEOUT_MS);
 
       proc.stdout.on("data", (data) => {
         if (output.length < 500_000) output += data.toString();
@@ -176,11 +193,13 @@ async function handleCompile(req, res) {
 
       proc.on("error", (err) => {
         output += `\nProcess execution error: ${err.message}`;
-        resolve(output);
+        clearTimeout(timer);
+        resolve({ logs: output, timedOut });
       });
 
       proc.on("close", () => {
-        resolve(output);
+        clearTimeout(timer);
+        resolve({ logs: output, timedOut });
       });
     });
 
@@ -211,17 +230,19 @@ async function handleCompile(req, res) {
       }
     }
 
-    const errors = parseLatexErrors(fullLogs);
+    const errors = timedOut
+      ? [{ code: "timeout", message: "PDF compilation took too long and was stopped." }]
+      : parseLatexErrors(fullLogs);
     sendJson(res, 200, {
       success: false,
       errors,
       logs: fullLogs,
     });
-  } catch (error) {
+  } catch {
     sendJson(res, 500, {
       success: false,
-      errors: [{ code: "runtime", message: error instanceof Error ? error.message : "Internal compile failure." }],
-      logs: error instanceof Error ? error.stack || error.message : String(error),
+      errors: [{ code: "runtime", message: "The PDF compiler could not complete this request." }],
+      logs: "",
     });
   } finally {
     // Disposable cleanup: always delete temp compilation directory

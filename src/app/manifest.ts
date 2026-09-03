@@ -5,7 +5,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "AI Resume Builder",
     short_name: "AI Resume",
     description:
-      "Evidence-grounded resume tailoring and ATS-ready LaTeX generation compiled in your browser.",
+      "Evidence-grounded resume tailoring and ATS-ready LaTeX generation.",
     start_url: "/",
     display: "standalone",
     background_color: "#09090b",

@@ -1,6 +1,14 @@
 import { z } from "zod";
 
-export const RenderedSectionSchema = z.enum(["skills", "experience", "projects", "education"]);
+export const RenderedSectionSchema = z.enum([
+  "summary",
+  "experience",
+  "skills",
+  "projects",
+  "education",
+  "certifications",
+  "achievements",
+]);
 
 export const FontFamilySchema = z.enum([
   "xcharter",
@@ -25,7 +33,7 @@ export const ResumePresentationSchema = z.object({
   fontSize: z.union([z.literal(10.5), z.literal(11), z.literal(12)]),
   margin: z.union([z.literal(0.4), z.literal(0.5), z.literal(0.65)]),
   density: z.enum(["compact", "balanced", "relaxed"]),
-  sections: z.array(RenderedSectionSchema).min(1).max(4).refine(
+  sections: z.array(RenderedSectionSchema).min(1).max(8).refine(
     (sections) => new Set(sections).size === sections.length,
     "Resume sections must be unique.",
   ),

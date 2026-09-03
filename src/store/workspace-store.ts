@@ -7,13 +7,14 @@ import type { ProofreadingChange, ResumeChange, UnsupportedGap } from "@/feature
 import type { JobAnalysis, JobComparison, TargetJob } from "@/features/jobs/schema";
 import { renderResumeToLatex } from "@/features/latex/renderer";
 import { DEFAULT_PRESENTATION, type ResumePresentation } from "@/features/presentation/schema";
-import type { Resume } from "@/features/resume/schema";
+import { type CandidateProfile, resumeToCandidateProfile } from "@/features/resume/candidate-profile";
+import type { CareerStage, Resume } from "@/features/resume/schema";
 import type { Workspace } from "@/features/workspace/schema";
 import type { LatexProjectFile } from "@/features/workspace/schema";
 import { clearWorkspace, loadWorkspace, saveWorkspace } from "@/lib/storage/workspace-db";
 import { createId, hashText } from "@/lib/utils";
 
-export type WorkspacePanel = "overview" | "experience" | "projects" | "skills" | "education" | "format" | "guidance" | "job" | "changes" | "proofread" | "latex";
+export type WorkspacePanel = "overview" | "experience" | "projects" | "skills" | "education" | "format" | "guidance" | "job" | "changes" | "latex";
 type SaveStatus = "idle" | "saving" | "saved" | "error" | "corrupt";
 
 type WorkspaceStore = {
@@ -28,11 +29,27 @@ type WorkspaceStore = {
   compileLogs: string;
   compileError: string | null;
   hydrate: () => Promise<void>;
-  startWorkspace: (resume: Resume, originalLatex: string | null, name?: string) => Promise<void>;
+  startWorkspace: (
+    resume: Resume,
+    originalLatex: string | null,
+    name?: string,
+    profile?: CandidateProfile,
+    locale?: "india" | "us-canada",
+  ) => Promise<void>;
   updateResume: (updater: (resume: Resume) => Resume) => void;
   undo: () => void;
   redo: () => void;
   setPanel: (panel: WorkspacePanel) => void;
+  setLocale: (locale: "india" | "us-canada") => void;
+  setCareerStageOverride: (stage: CareerStage | null) => void;
+  applyTailoredResume: (
+    tailoredResume: Resume,
+    summary: string,
+    changes: ResumeChange[],
+    gaps: UnsupportedGap[],
+  ) => void;
+  restoreBaseline: () => void;
+  revertChange: (id: string) => { ok: boolean; message?: string };
   setTargetJob: (job: TargetJob | null) => void;
   setAnalysis: (analysis: JobAnalysis, comparison: JobComparison) => void;
   setTailoring: (changes: ResumeChange[], gaps: UnsupportedGap[]) => void;
@@ -103,16 +120,23 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => ({
     })();
     return hydrationPromise;
   },
-  startWorkspace: async (resume, originalLatex, name = "Primary resume") => {
+  startWorkspace: async (resume, originalLatex, name = "Primary resume", profile, locale = "india") => {
     const presentation = DEFAULT_PRESENTATION;
     const generatedLatex = renderResumeToLatex(resume, presentation);
     const revision = await hashText(JSON.stringify(resume));
+    const candidateProfile = profile ?? resumeToCandidateProfile(resume);
     const workspace: Workspace = {
       version: 3,
       id: createId("workspace"),
       name,
       resume,
       originalResume: resume,
+      baselineResume: resume,
+      tailoredResume: null,
+      candidateProfile,
+      locale,
+      careerStageOverride: null,
+      activeVariant: "current",
       originalLatex,
       generatedLatex,
       manualLatex: null,
@@ -150,6 +174,83 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => ({
     return { workspace: withResume(state.workspace, resume), past: [...state.past.slice(-49), state.workspace.resume], future, saveStatus: "saving" };
   }),
   setPanel: (panel) => set({ panel }),
+  setLocale: (locale) => set((state) => state.workspace ? { workspace: { ...state.workspace, locale, updatedAt: new Date().toISOString() }, saveStatus: "saving" } : state),
+  setCareerStageOverride: (careerStageOverride) => set((state) => state.workspace ? { workspace: { ...state.workspace, careerStageOverride, updatedAt: new Date().toISOString() }, saveStatus: "saving" } : state),
+  applyTailoredResume: (tailoredResume, summary, changes, gaps) => set((state) => {
+    if (!state.workspace) return state;
+    const previous = state.workspace.resume;
+    const updated = withResume(state.workspace, tailoredResume);
+    return {
+      workspace: {
+        ...updated,
+        tailoredResume,
+        tailoringSummary: summary,
+        tailoringChanges: changes.map((c) => ({ ...c, status: "accepted" as const })),
+        unsupportedGaps: gaps,
+        activeVariant: "tailored",
+      },
+      past: [...state.past.slice(-49), previous],
+      future: [],
+      saveStatus: "saving",
+    };
+  }),
+  restoreBaseline: () => set((state) => {
+    if (!state.workspace) return state;
+    const baseline = state.workspace.baselineResume ?? state.workspace.originalResume;
+    const updated = withResume(state.workspace, baseline);
+    return {
+      workspace: {
+        ...updated,
+        activeVariant: "original",
+      },
+      past: [...state.past.slice(-49), state.workspace.resume],
+      future: [],
+      saveStatus: "saving",
+    };
+  }),
+  revertChange: (id) => {
+    const state = get();
+    const workspace = state.workspace;
+    if (!workspace) return { ok: false, message: "Workspace not found." };
+    const change = workspace.tailoringChanges.find((item) => item.id === id);
+    if (!change) return { ok: false, message: "Change not found." };
+
+    if (change.type === "rewrite-text") {
+      try {
+        const revertOperation: ResumeChange = {
+          ...change,
+          before: change.after,
+          after: change.before,
+        };
+        const resume = applyResumeChange(workspace.resume, revertOperation);
+        set({
+          workspace: {
+            ...withResume(workspace, resume),
+            tailoringChanges: workspace.tailoringChanges.map((item) =>
+              item.id === id ? { ...item, status: "rejected" as const } : item,
+            ),
+          },
+          past: [...state.past.slice(-49), workspace.resume],
+          future: [],
+          saveStatus: "saving",
+        });
+        return { ok: true };
+      } catch (error) {
+        return { ok: false, message: error instanceof Error ? error.message : "Could not revert change." };
+      }
+    }
+
+    set({
+      workspace: {
+        ...workspace,
+        tailoringChanges: workspace.tailoringChanges.map((item) =>
+          item.id === id ? { ...item, status: "rejected" as const } : item,
+        ),
+      },
+      saveStatus: "saving",
+    });
+    return { ok: true };
+  },
   setTargetJob: (targetJob) => set((state) => state.workspace ? { workspace: { ...state.workspace, targetJob, jobAnalysis: null, jobComparison: null, tailoringChanges: [], unsupportedGaps: [], updatedAt: new Date().toISOString() }, saveStatus: "saving" } : state),
   setAnalysis: (jobAnalysis, jobComparison) => set((state) => state.workspace ? { workspace: { ...state.workspace, jobAnalysis, jobComparison, updatedAt: new Date().toISOString() }, saveStatus: "saving" } : state),
   setTailoring: (tailoringChanges, unsupportedGaps) => set((state) => state.workspace ? { workspace: { ...state.workspace, tailoringChanges, unsupportedGaps, updatedAt: new Date().toISOString() }, saveStatus: "saving" } : state),

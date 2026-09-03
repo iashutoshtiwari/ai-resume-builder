@@ -102,7 +102,7 @@ export default function Image() {
               marginTop: "8px",
             }}
           >
-            Every bullet change is grounded in verifiable candidate evidence, checked with Zod schemas, and compiled locally in your browser with TeX Live WebAssembly.
+            Every bullet change is grounded in verifiable candidate evidence, checked with Zod schemas, and rendered through a dedicated TeX service.
           </p>
         </div>
 
@@ -110,7 +110,7 @@ export default function Image() {
         <div style={{ display: "flex", gap: "16px", marginTop: "16px" }}>
           {[
             { title: "ATS Guaranteed", subtitle: "Clean LaTeX glyphs & standard fonts" },
-            { title: "In-Browser Wasm", subtitle: "Compiles locally via Siglum engine" },
+            { title: "TeX Live PDF", subtitle: "Compiles through a dedicated service" },
             { title: "Client-Side Privacy", subtitle: "Resumes never stored in remote DBs" },
             { title: "Atomic Diffs", subtitle: "Inspect & approve every modification" },
           ].map((feature) => (

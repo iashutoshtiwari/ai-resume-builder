@@ -2,16 +2,28 @@
 
 import { useMemo, useState } from "react";
 import { diffWords } from "diff";
-import { AlertTriangle, Check, CircleDashed, ExternalLink, RefreshCw, ShieldAlert, Sparkles, X } from "lucide-react";
+import {
+  AlertTriangle,
+  Check,
+  CircleDashed,
+  HelpCircle,
+  RefreshCw,
+  RotateCcw,
+  ShieldAlert,
+  Sparkles,
+  X,
+} from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import type { ProofreadingResponse, ResumeChange, TailoringResponse } from "@/features/changes/schema";
+import type { ProofreadingResponse, ResumeChange } from "@/features/changes/schema";
 import { GUIDANCE_CORPUS } from "@/features/guidance/corpus";
+import { assessJobMatch } from "@/features/assessment/scoring";
 import type { JobAnalysisResponse } from "@/features/jobs/schema";
+import type { TailoredResumeResponse } from "@/lib/ai/provider";
 import { useWorkspaceStore } from "@/store/workspace-store";
 
 async function postAI<T extends object>(path: string, body: unknown): Promise<T> {
@@ -29,7 +41,8 @@ export function JobPanel({ aiConfigured }: { aiConfigured: boolean }) {
   const workspace = useWorkspaceStore((state) => state.workspace)!;
   const setTargetJob = useWorkspaceStore((state) => state.setTargetJob);
   const setAnalysis = useWorkspaceStore((state) => state.setAnalysis);
-  const setTailoring = useWorkspaceStore((state) => state.setTailoring);
+  const applyTailoredResume = useWorkspaceStore((state) => state.applyTailoredResume);
+  const restoreBaseline = useWorkspaceStore((state) => state.restoreBaseline);
   const setPanel = useWorkspaceStore((state) => state.setPanel);
   const [description, setDescription] = useState(workspace.targetJob?.description ?? "");
   const [role, setRole] = useState(workspace.targetJob?.role ?? "");
@@ -52,31 +65,221 @@ export function JobPanel({ aiConfigured }: { aiConfigured: boolean }) {
     if (!workspace.targetJob || !workspace.jobAnalysis || !workspace.jobComparison) return;
     setBusy("tailor");
     try {
-      const result = await postAI<TailoringResponse>("/api/ai/tailor", { resume: workspace.resume, targetJob: workspace.targetJob, analysis: { analysis: workspace.jobAnalysis, comparison: workspace.jobComparison }, resumeRevision: workspace.resumeRevision });
-      setTailoring(result.changes, result.gaps);
-      setPanel("changes");
-      toast.success(`${result.changes.length} proposals ready for review`);
+      const result = await postAI<TailoredResumeResponse>("/api/ai/tailor", {
+        resume: workspace.resume,
+        targetJob: workspace.targetJob,
+        analysis: { analysis: workspace.jobAnalysis, comparison: workspace.jobComparison },
+        resumeRevision: workspace.resumeRevision,
+      });
+      applyTailoredResume(result.tailoredResume, result.summary, result.changes, result.gaps);
+      toast.success("Tailored resume generated and applied! Preview updated.");
     } catch (error) { toast.error(error instanceof Error ? error.message : "Tailoring failed."); }
     finally { setBusy(null); }
   }
 
-  const groups = useMemo(() => ({
-    supported: workspace.jobComparison?.entries.filter((entry) => entry.status === "supported") ?? [],
-    "under-emphasized": workspace.jobComparison?.entries.filter((entry) => entry.status === "under-emphasized") ?? [],
-    unsupported: workspace.jobComparison?.entries.filter((entry) => entry.status === "unsupported") ?? [],
-  }), [workspace.jobComparison]);
+  const jobMatch = useMemo(() => workspace.jobAnalysis ? assessJobMatch(workspace.resume, workspace.jobAnalysis) : null, [workspace.resume, workspace.jobAnalysis]);
   const requirements = new Map(workspace.jobAnalysis?.requirements.map((item) => [item.id, item.text]));
 
-  return <div><PanelHeading eyebrow="Target / Job" title="Evidence coverage" copy="Coverage is explainable; there is no invented ATS score." action={workspace.jobAnalysis && <Button size="sm" disabled={busy !== null || !aiConfigured} onClick={() => void tailor()}>{busy === "tailor" ? <CircleDashed className="animate-spin" /> : <Sparkles />} Generate changes</Button>} />
-    <div className="space-y-5 p-5">
-      <div className="grid gap-4 sm:grid-cols-2"><div><Label htmlFor="job-role">Role</Label><Input id="job-role" value={role} onChange={(event) => setRole(event.target.value)} placeholder="Senior Software Engineer" className="mt-1.5" /></div><div><Label htmlFor="job-company">Company</Label><Input id="job-company" value={company} onChange={(event) => setCompany(event.target.value)} placeholder="Company" className="mt-1.5" /></div></div>
-      <div><div className="flex items-center justify-between"><Label htmlFor="job-description">Job description</Label><span className="font-mono text-[10px] text-muted-foreground">{description.length.toLocaleString()} / 30,000</span></div><Textarea id="job-description" value={description} onChange={(event) => setDescription(event.target.value.slice(0, 30_000))} className="mt-1.5 min-h-52 resize-y" placeholder="Paste the full job description…" /></div>
-      <Button disabled={!aiConfigured || description.trim().length < 40 || busy !== null} onClick={() => void analyze()}>{busy === "analysis" ? <><CircleDashed className="animate-spin" /> Analyzing</> : <><Sparkles /> Analyze evidence</>}</Button>
-      {!aiConfigured && <div className="border border-warning/30 bg-warning/5 px-4 py-3 text-sm text-muted-foreground">AI is disabled until an API key (GEMINI_API_KEY or OPENROUTER_API_KEY) is configured in your environment. Editing, formatting, local compilation, and export still work.</div>}
-      {workspace.jobAnalysis && <div className="space-y-4 border-t border-border pt-5"><div><h3 className="text-sm font-medium">{workspace.jobAnalysis.role || "Target role"}{workspace.jobAnalysis.company ? ` · ${workspace.jobAnalysis.company}` : ""}</h3><p className="mt-2 text-sm leading-6 text-muted-foreground">{workspace.jobAnalysis.summary}</p></div>{(["supported", "under-emphasized", "unsupported"] as const).map((status) => <section key={status} className="border border-border"><div className="flex items-center justify-between border-b border-border px-4 py-3"><div className="flex items-center gap-2">{status === "supported" ? <Check className="size-4 text-primary" /> : status === "under-emphasized" ? <AlertTriangle className="size-4 text-warning" /> : <ShieldAlert className="size-4 text-muted-foreground" />}<h3 className="text-sm font-medium capitalize">{status.replace("-", " ")}</h3></div><Badge variant="outline">{groups[status].length}</Badge></div><div className="divide-y divide-border">{groups[status].map((entry) => <div key={entry.requirementId} className="px-4 py-3"><p className="text-sm">{requirements.get(entry.requirementId)}</p><p className="mt-1 text-xs leading-5 text-muted-foreground">{entry.explanation}</p>{entry.evidence.length > 0 && <p className="mt-2 font-mono text-[10px] text-primary">{entry.evidence.length} evidence reference{entry.evidence.length === 1 ? "" : "s"}</p>}</div>)}</div></section>)}</div>}
-      <p className="border-t border-border pt-4 text-xs leading-5 text-muted-foreground">AI requests leave this browser and are processed by Google Gemini or OpenRouter. Suggestions remain unapplied until you approve them.</p>
+  return (
+    <div>
+      <PanelHeading
+        eyebrow="Target / Job"
+        title="Evidence coverage & Tailoring"
+        copy="Deterministic matching distinguishes verified from transferable evidence and flags hard blockers."
+        action={
+          workspace.jobAnalysis && (
+            <Button
+              size="sm"
+              disabled={busy !== null || !aiConfigured}
+              onClick={() => void tailor()}
+            >
+              {busy === "tailor" ? (
+                <>
+                  <CircleDashed className="animate-spin" /> Tailoring resume…
+                </>
+              ) : (
+                <>
+                  <Sparkles /> Tailor Resume
+                </>
+              )}
+            </Button>
+          )
+        }
+      />
+      <div className="space-y-5 p-5">
+        {workspace.activeVariant === "tailored" && (
+          <div className="rounded-none border border-primary/40 bg-primary/10 p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Sparkles className="size-4 text-primary" />
+                <span className="text-sm font-semibold text-primary">Tailored Resume Proposal Active</span>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  restoreBaseline();
+                  toast.info("Restored baseline resume.");
+                }}
+              >
+                <RotateCcw className="mr-1 size-3.5" /> Restore Baseline
+              </Button>
+            </div>
+            {workspace.tailoringSummary && (
+              <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{workspace.tailoringSummary}</p>
+            )}
+            <div className="mt-3 flex items-center gap-2">
+              <Button size="sm" variant="secondary" onClick={() => setPanel("changes")}>
+                Review {workspace.tailoringChanges.length} Diffs
+              </Button>
+            </div>
+          </div>
+        )}
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <Label htmlFor="job-role">Role</Label>
+            <Input id="job-role" value={role} onChange={(event) => setRole(event.target.value)} placeholder="Senior Software Engineer" className="mt-1.5" />
+          </div>
+          <div>
+            <Label htmlFor="job-company">Company</Label>
+            <Input id="job-company" value={company} onChange={(event) => setCompany(event.target.value)} placeholder="Company" className="mt-1.5" />
+          </div>
+        </div>
+
+        <div>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="job-description">Job description</Label>
+            <span className="font-mono text-[10px] text-muted-foreground">{description.length.toLocaleString()} / 30,000</span>
+          </div>
+          <Textarea id="job-description" value={description} onChange={(event) => setDescription(event.target.value.slice(0, 30_000))} className="mt-1.5 min-h-44 resize-y" placeholder="Paste the target job description…" />
+        </div>
+
+        <Button disabled={!aiConfigured || description.trim().length < 40 || busy !== null} onClick={() => void analyze()}>
+          {busy === "analysis" ? <><CircleDashed className="animate-spin" /> Analyzing requirements…</> : <><Sparkles /> Analyze job match</>}
+        </Button>
+
+        {!aiConfigured && (
+          <div className="border border-warning/30 bg-warning/5 px-4 py-3 text-sm text-muted-foreground">
+            AI is disabled until an API key is configured.
+          </div>
+        )}
+
+        {workspace.jobAnalysis && jobMatch && (
+          <div className="space-y-4 border-t border-border pt-5">
+            <section className="border border-border bg-card p-4">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">Apply Recommendation</p>
+                  <div className="mt-1 flex items-center gap-2">
+                    <Badge
+                      variant="outline"
+                      className={
+                        jobMatch.recommendation === "Strong Apply"
+                          ? "border-emerald-500/40 text-emerald-400"
+                          : jobMatch.recommendation === "Apply"
+                            ? "border-blue-500/40 text-blue-400"
+                            : jobMatch.recommendation === "Stretch Apply"
+                              ? "border-amber-500/40 text-amber-400"
+                              : "border-red-500/40 text-red-400"
+                      }
+                    >
+                      {jobMatch.recommendation}
+                    </Badge>
+                    <span className="font-mono text-xs text-muted-foreground">
+                      Match: {jobMatch.score} / 100
+                    </span>
+                  </div>
+                </div>
+                <div className="text-right sm:text-left">
+                  <p className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">Screening Alignment</p>
+                  <Badge variant="secondary" className="mt-1 text-xs">
+                    {jobMatch.alignment}
+                  </Badge>
+                </div>
+              </div>
+              <p className="mt-2 text-xs leading-5 text-muted-foreground">{jobMatch.recommendationReason}</p>
+            </section>
+
+            {jobMatch.groups.blockers.length > 0 && (
+              <section className="border border-destructive/40 bg-destructive/10">
+                <div className="flex items-center justify-between border-b border-destructive/30 px-4 py-3">
+                  <div className="flex items-center gap-2">
+                    <ShieldAlert className="size-4 text-red-400" />
+                    <h3 className="text-sm font-semibold text-red-400">Mandatory Blocker Signals</h3>
+                  </div>
+                  <Badge variant="outline" className="border-destructive text-red-400">
+                    {jobMatch.groups.blockers.length}
+                  </Badge>
+                </div>
+                <div className="divide-y divide-destructive/20">
+                  {jobMatch.groups.blockers.map((entry) => (
+                    <div key={entry.requirementId} className="px-4 py-3">
+                      <p className="text-sm font-medium">{requirements.get(entry.requirementId)}</p>
+                      <p className="mt-1 text-xs leading-5 text-muted-foreground">{entry.explanation}</p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            <section className="border border-border">
+              <div className="flex items-center justify-between border-b border-border px-4 py-3">
+                <div className="flex items-center gap-2">
+                  <Check className="size-4 text-emerald-400" />
+                  <h3 className="text-sm font-medium">Exact Matches ({jobMatch.groups.strong.length})</h3>
+                </div>
+              </div>
+              <div className="divide-y divide-border">
+                {jobMatch.groups.strong.map((entry) => (
+                  <div key={entry.requirementId} className="px-4 py-3">
+                    <p className="text-sm">{requirements.get(entry.requirementId)}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">{entry.explanation}</p>
+                    {entry.evidence && <p className="mt-1 font-mono text-[10px] text-primary">Evidence: {entry.evidence}</p>}
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <section className="border border-border">
+              <div className="flex items-center justify-between border-b border-border px-4 py-3">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="size-4 text-amber-400" />
+                  <h3 className="text-sm font-medium">Transferable & Partial ({jobMatch.groups.transferable.length})</h3>
+                </div>
+              </div>
+              <div className="divide-y divide-border">
+                {jobMatch.groups.transferable.map((entry) => (
+                  <div key={entry.requirementId} className="px-4 py-3">
+                    <p className="text-sm">{requirements.get(entry.requirementId)}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">{entry.explanation}</p>
+                    {entry.evidence && <p className="mt-1 font-mono text-[10px] text-primary">Evidence: {entry.evidence}</p>}
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <section className="border border-border">
+              <div className="flex items-center justify-between border-b border-border px-4 py-3">
+                <div className="flex items-center gap-2">
+                  <HelpCircle className="size-4 text-muted-foreground" />
+                  <h3 className="text-sm font-medium">Unrepresented Qualifications ({jobMatch.groups.gaps.length})</h3>
+                </div>
+              </div>
+              <div className="divide-y divide-border">
+                {jobMatch.groups.gaps.map((entry) => (
+                  <div key={entry.requirementId} className="px-4 py-3">
+                    <p className="text-sm">{requirements.get(entry.requirementId)}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">{entry.explanation}</p>
+                  </div>
+                ))}
+              </div>
+            </section>
+          </div>
+        )}
+      </div>
     </div>
-  </div>;
+  );
 }
 
 function WordDiff({ before, after }: { before: string; after: string }) {
@@ -97,19 +300,12 @@ function GuidanceCitationBadges({ ruleIds }: { ruleIds?: string[] }) {
         {ruleIds.map((ruleId) => {
           const chunk = GUIDANCE_CORPUS.find((c) => c.id === ruleId);
           return (
-            <a
-              key={ruleId}
-              href={chunk?.sourceUrl ?? "https://www.reddit.com/r/EngineeringResumes/wiki/"}
-              target="_blank"
-              rel="noreferrer noopener"
-              className="inline-flex items-center gap-1 rounded border border-border bg-muted/60 px-2 py-0.5 text-[10px] text-foreground hover:bg-muted"
-            >
+            <span key={ruleId} className="inline-flex items-center gap-1 rounded-none border border-border bg-muted/60 px-2 py-0.5 text-[10px] text-foreground">
               <span>{chunk?.title ?? ruleId}</span>
               {chunk?.sourceSection && (
                 <span className="text-muted-foreground font-mono">({chunk.sourceSection})</span>
               )}
-              <ExternalLink className="size-2.5 text-muted-foreground" />
-            </a>
+            </span>
           );
         })}
       </div>
@@ -120,6 +316,7 @@ function GuidanceCitationBadges({ ruleIds }: { ruleIds?: string[] }) {
 function ChangeCard({ change }: { change: ResumeChange }) {
   const workspace = useWorkspaceStore((state) => state.workspace)!;
   const accept = useWorkspaceStore((state) => state.acceptChange);
+  const revert = useWorkspaceStore((state) => state.revertChange);
   const setStatus = useWorkspaceStore((state) => state.setChangeStatus);
   const [editing, setEditing] = useState(false);
   const [edited, setEdited] = useState(change.type === "rewrite-text" ? change.after : "");
@@ -147,7 +344,7 @@ function ChangeCard({ change }: { change: ResumeChange }) {
             <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Resume evidence</p>
             <div className="flex flex-wrap gap-1.5">
               {change.evidence.map((ev, i) => (
-                <span key={i} className="rounded border border-primary/20 bg-primary/5 px-2 py-0.5 font-mono text-[10px] text-primary">
+                <span key={i} className="rounded-none border border-primary/20 bg-primary/5 px-2 py-0.5 font-mono text-[10px] text-primary">
                   {ev.type}{ev.quote ? `: “${ev.quote}”` : ""}
                 </span>
               ))}
@@ -161,7 +358,7 @@ function ChangeCard({ change }: { change: ResumeChange }) {
               {change.jobRequirementIds.map((id) => {
                 const req = workspace.jobAnalysis?.requirements.find((r) => r.id === id);
                 return (
-                  <span key={id} className="rounded border border-border bg-muted/60 px-2 py-0.5 text-[10px] text-muted-foreground">
+                  <span key={id} className="rounded-none border border-border bg-muted/60 px-2 py-0.5 text-[10px] text-muted-foreground">
                     {req?.text ?? id}
                   </span>
                 );
@@ -176,6 +373,18 @@ function ChangeCard({ change }: { change: ResumeChange }) {
               <Button size="sm" disabled={stale} onClick={() => apply(edited)}>Apply edited</Button>
               <Button size="sm" variant="ghost" onClick={() => setEditing(false)}>Cancel</Button>
             </>
+          ) : change.status === "accepted" || change.status === "edited" ? (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                const res = revert(change.id);
+                if (res.ok) toast.success("Change reverted to original");
+                else toast.error(res.message);
+              }}
+            >
+              <RotateCcw className="mr-1 size-3.5" /> Revert
+            </Button>
           ) : (
             <>
               <Button size="sm" disabled={stale || change.status !== "pending"} onClick={() => apply()}>Accept</Button>

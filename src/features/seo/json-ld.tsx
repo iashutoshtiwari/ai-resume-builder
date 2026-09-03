@@ -11,10 +11,9 @@ export function JsonLd() {
     name: "AI Resume Builder",
     url: baseUrl,
     applicationCategory: "BusinessApplication",
-    operatingSystem: "All (Web Browser with WebAssembly)",
-    browserRequirements: "Requires HTML5, Web Workers, and WebAssembly",
+    operatingSystem: "Web",
     description:
-      "Evidence-grounded resume tailoring workspace. Ingest PDF or DOCX resumes, match against job descriptions, review atomic diffs with zero hallucinations, and compile ATS-ready LaTeX PDFs locally via WebAssembly.",
+      "Evidence-grounded resume tailoring workspace. Ingest PDF or DOCX resumes, match against job descriptions, review proposals, and compile ATS-ready LaTeX PDFs through a dedicated service.",
     offers: {
       "@type": "Offer",
       price: "0",
@@ -22,7 +21,7 @@ export function JsonLd() {
     },
     featureList: [
       "Evidence-grounded AI bullet tailoring with hallucination safeguards",
-      "Client-side LaTeX compilation via Siglum WebAssembly and TeX Live",
+      "Dedicated TeX Live PDF compilation service",
       "Multi-format ingestion: PDF, Word DOCX, LaTeX, and plain text",
       "Standard ATS-compliant single-column resume output",
       "Zero server-side persistence: documents stay in browser IndexedDB",
@@ -58,8 +57,8 @@ export function JsonLd() {
       {
         "@type": "HowToStep",
         position: 4,
-        name: "Compile Local LaTeX PDF",
-        text: "Compile your tailored resume into an ATS-optimized PDF directly inside your browser using the local WebAssembly LaTeX engine.",
+        name: "Compile LaTeX PDF",
+        text: "Compile your tailored resume into an ATS-friendly PDF through the dedicated TeX service.",
       },
     ],
   };
@@ -97,7 +96,7 @@ export function JsonLd() {
         name: "Do I need TeX Live or Overleaf installed on my machine?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "No installation is required. AI Resume Builder bundles Siglum WebAssembly with TeX Live packages that run directly inside a background Web Worker in modern web browsers.",
+          text: "No local TeX installation is required. PDF compilation is handled by a dedicated, restricted TeX service.",
         },
       },
       {

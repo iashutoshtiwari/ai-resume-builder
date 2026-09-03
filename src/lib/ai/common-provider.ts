@@ -2,18 +2,34 @@ import "server-only";
 
 import { GoogleGenAI } from "@google/genai";
 import { z } from "zod";
-import { ProofreadingResponseSchema, TailoringResponseSchema } from "@/features/changes/schema";
+import {
+  ProofreadingResponseSchema,
+  ResumeChangeSchema,
+  TailoringResponseSchema,
+  UnsupportedGapSchema,
+} from "@/features/changes/schema";
 import { filterValidChanges } from "@/features/changes/validate-change";
 import type { GuidanceContext } from "@/features/guidance/schema";
 import { JobAnalysisResponseSchema, type JobAnalysisResponse, type TargetJob } from "@/features/jobs/schema";
 import type { ImportResult } from "@/features/latex/importer";
+import type { RenderedSection } from "@/features/presentation/schema";
+import type { CandidateProfile } from "@/features/resume/candidate-profile";
 import { ResumeSchema, type Resume } from "@/features/resume/schema";
 import { AppError } from "@/lib/ai/errors";
+import { validateResumeAgainstEvidence } from "@/lib/ai/factuality-validator";
 import { delay } from "@/lib/utils";
 import { extractAndParseJson, normalizeRawJobAnalysis, normalizeRawResume } from "@/lib/ai/normalize";
 import { callOpenRouter, configuredOpenRouterModel } from "@/lib/ai/openrouter-driver";
-import { analyzeJobPrompt, parseResumePrompt, proofreadPrompt, repairPrompt, tailorPrompt } from "@/lib/ai/prompts";
-import type { ResumeAIProvider } from "@/lib/ai/provider";
+import {
+  analyzeJobPrompt,
+  buildResumePrompt,
+  fullTailorPrompt,
+  parseResumePrompt,
+  proofreadPrompt,
+  repairPrompt,
+  tailorPrompt,
+} from "@/lib/ai/prompts";
+import type { BuildResumeResponse, ResumeAIProvider, TailoredResumeResponse } from "@/lib/ai/provider";
 import { assertUniqueResumeIds, assertValidJobComparison, filterValidProofreadingChanges } from "@/lib/ai/semantic-validation";
 
 export type AIProviderType = "google" | "openrouter";
@@ -29,6 +45,19 @@ const DEFAULT_GOOGLE_MODEL = "gemini-3.6-flash";
 const ImportResponseSchema = z.object({
   resume: ResumeSchema,
   warnings: z.array(z.object({ code: z.string().min(1), message: z.string().min(1).max(1000) })).max(50),
+});
+
+const BuildResumeResponseSchema = z.object({
+  resume: ResumeSchema,
+  summary: z.string().min(1).max(2000),
+  normalizedItemsCount: z.number().int().nonnegative().default(0),
+});
+
+const FullTailoringResponseSchema = z.object({
+  tailoredResume: ResumeSchema,
+  summary: z.string().min(1).max(2000),
+  changes: z.array(ResumeChangeSchema).max(80),
+  gaps: z.array(UnsupportedGapSchema).max(80),
 });
 
 function configuredGoogleModel(): string {
@@ -248,6 +277,40 @@ export class CommonResumeAIProvider implements ResumeAIProvider {
     return { ...parsed, confidence: parsed.warnings.length > 0 ? "medium" : "high", importer: "ai" };
   }
 
+  async parseResume(source: string): Promise<ImportResult> {
+    return this.parseLatexResume(source);
+  }
+
+  async buildResume(
+    profile: CandidateProfile,
+    sections: RenderedSection[],
+    guidance: GuidanceContext,
+  ): Promise<BuildResumeResponse> {
+    const result = await this.request(
+      buildResumePrompt(
+        JSON.stringify(profile),
+        JSON.stringify(sections),
+        JSON.stringify(guidance),
+      ),
+      BuildResumeResponseSchema,
+      (raw) => {
+        if (raw && typeof raw === "object" && "resume" in raw) {
+          return {
+            ...raw,
+            resume: normalizeRawResume((raw as { resume: unknown }).resume),
+          };
+        }
+        return raw;
+      },
+    );
+    assertUniqueResumeIds(result.resume);
+    const factuality = validateResumeAgainstEvidence(result.resume, profile);
+    if (!factuality.valid) {
+      console.warn("[factuality-warning in build]", factuality.violations);
+    }
+    return result;
+  }
+
   async analyzeJob(resume: Resume, targetJob: TargetJob, guidance: GuidanceContext): Promise<JobAnalysisResponse> {
     const result = await this.request(
       analyzeJobPrompt(JSON.stringify(resume), JSON.stringify(targetJob), JSON.stringify(guidance)),
@@ -256,6 +319,52 @@ export class CommonResumeAIProvider implements ResumeAIProvider {
     );
     assertValidJobComparison(result, resume);
     return result;
+  }
+
+  async tailorResume(
+    resume: Resume,
+    targetJob: TargetJob,
+    analysis: JobAnalysisResponse,
+    resumeRevision: string,
+    guidance: GuidanceContext,
+  ): Promise<TailoredResumeResponse> {
+    const result = await this.request(
+      fullTailorPrompt(
+        JSON.stringify(resume),
+        JSON.stringify(targetJob),
+        JSON.stringify(analysis),
+        resumeRevision,
+        JSON.stringify(guidance),
+      ),
+      FullTailoringResponseSchema,
+      (raw) => {
+        if (raw && typeof raw === "object" && "tailoredResume" in raw) {
+          return {
+            ...raw,
+            tailoredResume: normalizeRawResume((raw as { tailoredResume: unknown }).tailoredResume),
+          };
+        }
+        return raw;
+      },
+    );
+    assertUniqueResumeIds(result.tailoredResume);
+    const validated = filterValidChanges(result.changes, resume, analysis.analysis, guidance);
+    const factuality = validateResumeAgainstEvidence(result.tailoredResume, resume);
+    if (!factuality.valid) {
+      console.warn("[factuality-warning in tailoring]", factuality.violations);
+    }
+
+    return {
+      tailoredResume: result.tailoredResume,
+      summary: result.summary,
+      changes: validated.valid,
+      gaps: result.gaps,
+      evidenceReport: analysis.comparison.entries.map((entry) => ({
+        requirement: entry.requirementId,
+        evidence: entry.explanation,
+        status: entry.status,
+      })),
+    };
   }
 
   async generateTailoringSuggestions(

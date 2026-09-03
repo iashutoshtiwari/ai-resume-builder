@@ -12,6 +12,7 @@ export const JobRequirementSchema = z.object({
   text: z.string().min(1).max(600),
   category: z.enum(["skill", "technology", "experience", "responsibility", "domain", "education", "soft-skill", "other"]),
   importance: z.enum(["required", "preferred", "inferred"]),
+  tier: z.enum(["blocker", "requirement", "nice-to-have"]).optional(),
 });
 
 export const JobAnalysisSchema = z.object({
@@ -23,6 +24,8 @@ export const JobAnalysisSchema = z.object({
   primaryResponsibilities: z.array(z.string().min(1).max(500)).max(30),
   senioritySignals: z.array(z.string().min(1).max(300)).max(20),
   domainSignals: z.array(z.string().min(1).max(300)).max(20),
+  blockerSignals: z.array(z.string().min(1).max(300)).optional(),
+  minYearsExperience: z.number().optional(),
 });
 
 export const JobComparisonEntrySchema = z.object({
@@ -42,6 +45,7 @@ export const JobAnalysisResponseSchema = z.object({
 });
 
 export type TargetJob = z.infer<typeof TargetJobSchema>;
+export type JobRequirement = z.infer<typeof JobRequirementSchema>;
 export type JobAnalysis = z.infer<typeof JobAnalysisSchema>;
 export type JobComparison = z.infer<typeof JobComparisonSchema>;
 export type JobAnalysisResponse = z.infer<typeof JobAnalysisResponseSchema>;

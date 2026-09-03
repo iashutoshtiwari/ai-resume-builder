@@ -29,34 +29,34 @@ export function LandingContent() {
     {
       num: "04",
       title: "Compile ATS LaTeX PDF",
-      desc: "Compile your approved resume into an ATS-optimized, high-resolution PDF directly in your browser using the local WebAssembly TeX Live engine.",
+      desc: "Compile your approved resume into a clean, text-based PDF using the dedicated TeX service.",
     },
   ];
 
   const advantages = [
     {
       icon: Cpu,
-      title: "In-Browser WebAssembly TeX Engine",
+      title: "Dedicated TeX Live Compiler",
       summary:
-        "Compiles with real pdfLaTeX via Siglum WebAssembly in a browser worker. No server queue, no TeX Live installation, and zero telemetry.",
+        "Compiles with a secure TeX Live service using a canonical software engineering template. Zero local setup required.",
     },
     {
       icon: ShieldCheck,
-      title: "Zero-Hallucination Semantic Guardrails",
+      title: "Zero-Hallucination Factuality Guardrails",
       summary:
-        "Every AI proposal is verified against your actual background. If a claim or metric lacks evidence, the validator rejects it before review.",
+        "Every AI proposal is strictly anchored to candidate history. No invented tech, fake metrics, or unearned credentials.",
     },
     {
       icon: Lock,
       title: "Client-Side Privacy by Architecture",
       summary:
-        "Your resume data and generated PDFs stay in your browser's IndexedDB. We do not store, log, or train on your personal documents.",
+        "Your resume data and generated PDFs stay in your browser's IndexedDB. We never train on your personal documents.",
     },
     {
       icon: Layers,
-      title: "100% Deterministic ATS Layouts",
+      title: "Stage & Locale Aware Intelligence",
       summary:
-        "Clean single-column LaTeX ensures Applicant Tracking Systems parse your name, contacts, roles, and dates with 100% fidelity.",
+        "Optimized for Indian tech hiring and US/Canada standards, with career-tier adaptation from students to staff/principal engineers.",
     },
   ];
 
@@ -75,7 +75,7 @@ export function LandingContent() {
     },
     {
       q: "Can I use AI Resume Builder without an AI API key?",
-      a: "Yes. You can import LaTeX resumes based on our canonical template, edit them in our structured workspace, preview real-time changes, and compile high-resolution PDFs completely offline and without any API key.",
+      a: "Yes. You can edit a structured resume and download the canonical LaTeX source without an AI key. PDF compilation requires the configured TeX service.",
     },
     {
       q: "What file formats can I import?",
@@ -130,7 +130,7 @@ export function LandingContent() {
               Engineered for precision, not guesswork
             </h2>
             <p className="mt-3 text-sm leading-relaxed text-muted-foreground sm:text-base">
-              Why engineers and technical professionals trust our local LaTeX compilation and strict semantic validation over generic chatbot prompts.
+              Why engineers and technical professionals trust deterministic LaTeX output and strict semantic validation over generic chatbot prompts.
             </p>
           </div>
 
@@ -213,7 +213,7 @@ export function LandingContent() {
                     <td className="p-4 font-medium">LaTeX Toolchain Required</td>
                     <td className="p-4 text-foreground">
                       <span className="inline-flex items-center gap-1.5 text-emerald-400">
-                        <CheckCircle2 className="size-3.5" /> Zero (WebAssembly in browser)
+                        <CheckCircle2 className="size-3.5" /> No local installation
                       </span>
                     </td>
                     <td className="p-4 text-muted-foreground">Manual TeX Live or Overleaf account</td>
@@ -235,7 +235,7 @@ export function LandingContent() {
             Everything you need to know about AI Resume Builder
           </h2>
           <p className="mx-auto mt-3 max-w-xl text-xs leading-relaxed text-muted-foreground sm:text-sm">
-            Direct answers on ATS compliance, evidence grounding, and local compilation.
+            Direct answers on ATS compatibility, evidence grounding, and PDF compilation.
           </p>
         </div>
 
@@ -274,7 +274,7 @@ export function LandingContent() {
               AI Resume Builder
             </span>
             <span className="font-mono text-[10px] text-muted-foreground">
-              v0.1 · Evidence-Grounded LaTeX
+              v0.2 · Evidence-Grounded LaTeX
             </span>
           </div>
 
@@ -302,7 +302,7 @@ export function LandingContent() {
           </div>
 
           <p className="text-[11px] text-muted-foreground">
-            Local browser compilation · Zero cloud storage of candidate resumes
+            Local workspace storage · Dedicated TeX compilation
           </p>
         </div>
       </footer>

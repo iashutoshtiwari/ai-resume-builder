@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { ScoreCard } from "@/features/assessment/score-card";
 import type { Resume, TextItem } from "@/features/resume/schema";
 import { createId } from "@/lib/utils";
 import { useWorkspaceStore } from "@/store/workspace-store";
@@ -25,18 +26,38 @@ function Field({ label, value, onChange, placeholder }: { label: string; value?:
 }
 
 function ConfirmDelete({ label, onDelete }: { label: string; onDelete: () => void }) {
-  return <AlertDialog><AlertDialogTrigger asChild><Button size="icon" variant="ghost" aria-label={`Delete ${label}`}><Trash2 /></Button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Delete {label}?</AlertDialogTitle><AlertDialogDescription>This removes the item and may make pending AI suggestions stale. You can still undo the edit during this session.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Keep it</AlertDialogCancel><AlertDialogAction onClick={onDelete}>Delete</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>;
+  return <AlertDialog><AlertDialogTrigger asChild><Button size="icon-sm" variant="ghost" aria-label={`Delete ${label}`}><Trash2 className="size-3.5" /></Button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Delete {label}?</AlertDialogTitle><AlertDialogDescription>This removes the item and may make pending AI suggestions stale. You can still undo the edit during this session.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Keep it</AlertDialogCancel><AlertDialogAction onClick={onDelete}>Delete</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>;
 }
 
 export function OverviewPanel() {
   const workspace = useWorkspaceStore((state) => state.workspace)!;
   const update = useWorkspaceStore((state) => state.updateResume);
   const setBasics = (patch: Partial<Resume["basics"]>) => update((resume) => ({ ...resume, basics: { ...resume.basics, ...patch } }));
-  return <div><SectionHeading eyebrow="Resume / Overview" title="Identity and contact" copy="Keep this factual. Structured edits regenerate the supported LaTeX source." /><div className="grid gap-5 p-5 sm:grid-cols-2"><div className="sm:col-span-2"><Field label="Full name" value={workspace.resume.basics.name} onChange={(name) => setBasics({ name })} /></div><Field label="Headline" value={workspace.resume.basics.headline} onChange={(headline) => setBasics({ headline })} placeholder="Software Engineer" /><Field label="Location" value={workspace.resume.basics.location} onChange={(location) => setBasics({ location })} /><Field label="Email" value={workspace.resume.basics.email} onChange={(email) => setBasics({ email })} /><Field label="Phone" value={workspace.resume.basics.phone} onChange={(phone) => setBasics({ phone })} /></div></div>;
+  return (
+    <div>
+      <SectionHeading
+        eyebrow="Resume / Overview"
+        title="Identity and contact"
+        copy="Keep this factual. Structured edits regenerate the supported LaTeX source."
+      />
+      <div className="space-y-5 p-5">
+        <ScoreCard resume={workspace.resume} />
+        <div className="grid gap-5 sm:grid-cols-2">
+          <div className="sm:col-span-2">
+            <Field label="Full name" value={workspace.resume.basics.name} onChange={(name) => setBasics({ name })} />
+          </div>
+          <Field label="Headline" value={workspace.resume.basics.headline} onChange={(headline) => setBasics({ headline })} placeholder="Software Engineer" />
+          <Field label="Location" value={workspace.resume.basics.location} onChange={(location) => setBasics({ location })} />
+          <Field label="Email" value={workspace.resume.basics.email} onChange={(email) => setBasics({ email })} />
+          <Field label="Phone" value={workspace.resume.basics.phone} onChange={(phone) => setBasics({ phone })} />
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function BulletEditor({ value, index, count, onText, onMove, onDelete, dragHandle }: { value: string; index: number; count: number; onText: (value: string) => void; onMove: (direction: -1 | 1) => void; onDelete: () => void; dragHandle?: React.ReactNode }) {
-  return <div className="group grid grid-cols-[28px_1fr_auto] gap-2 border-t border-border py-3 first:border-t-0"><div className="flex flex-col items-center pt-2">{dragHandle}<span className="mt-1 font-mono text-[10px] text-muted-foreground">{String(index + 1).padStart(2, "0")}</span></div><Textarea value={value} onChange={(event) => onText(event.target.value)} className="min-h-20 resize-y border-0 bg-transparent px-0 shadow-none focus-visible:ring-0" aria-label={`Bullet ${index + 1}`} /><div className="flex flex-col"><Button size="icon" variant="ghost" disabled={index === 0} onClick={() => onMove(-1)} aria-label={`Move bullet ${index + 1} up`}><ArrowUp /></Button><Button size="icon" variant="ghost" disabled={index === count - 1} onClick={() => onMove(1)} aria-label={`Move bullet ${index + 1} down`}><ArrowDown /></Button><ConfirmDelete label={`bullet ${index + 1}`} onDelete={onDelete} /></div></div>;
+  return <div className="group grid grid-cols-[28px_1fr_auto] gap-2 border-t border-border py-3 first:border-t-0"><div className="flex flex-col items-center pt-2">{dragHandle}<span className="mt-1 font-mono text-[10px] text-muted-foreground">{String(index + 1).padStart(2, "0")}</span></div><Textarea value={value} onChange={(event) => onText(event.target.value)} className="min-h-20 resize-y border-0 bg-transparent px-0 shadow-none focus-visible:ring-0" aria-label={`Bullet ${index + 1}`} /><div className="flex flex-col"><Button size="icon-sm" variant="ghost" disabled={index === 0} onClick={() => onMove(-1)} aria-label={`Move bullet ${index + 1} up`}><ArrowUp className="size-3.5" /></Button><Button size="icon-sm" variant="ghost" disabled={index === count - 1} onClick={() => onMove(1)} aria-label={`Move bullet ${index + 1} down`}><ArrowDown className="size-3.5" /></Button><ConfirmDelete label={`bullet ${index + 1}`} onDelete={onDelete} /></div></div>;
 }
 
 function move<T>(items: T[], from: number, to: number): T[] {
@@ -74,7 +95,7 @@ export function ProjectsPanel() {
 export function SkillsPanel() {
   const resume = useWorkspaceStore((state) => state.workspace!.resume);
   const update = useWorkspaceStore((state) => state.updateResume);
-  return <div><SectionHeading eyebrow="Resume / Skills" title="Skills inventory" copy="Keep only skills you can support in an interview." /><div className="space-y-4 p-5">{resume.skills.map((group) => <section key={group.id} className="border border-border p-4"><div className="flex gap-2"><Input value={group.name} aria-label="Skill group name" onChange={(event) => update((current) => ({ ...current, skills: current.skills.map((item) => item.id === group.id ? { ...item, name: event.target.value } : item) }))} /><ConfirmDelete label={group.name} onDelete={() => update((current) => ({ ...current, skills: current.skills.filter((item) => item.id !== group.id) }))} /></div><div className="mt-3 flex flex-wrap gap-2">{group.skills.map((skill, index) => <div key={skill.id} className="flex items-center border border-border bg-card"><Input value={skill.name} aria-label={`${group.name} skill ${index + 1}`} className="h-8 w-32 border-0" onChange={(event) => update((current) => ({ ...current, skills: current.skills.map((item) => item.id === group.id ? { ...item, skills: item.skills.map((entry) => entry.id === skill.id ? { ...entry, name: event.target.value } : entry) } : item) }))} /><Button size="icon" variant="ghost" className="size-8" aria-label={`Remove ${skill.name}`} onClick={() => update((current) => ({ ...current, skills: current.skills.map((item) => item.id === group.id ? { ...item, skills: item.skills.filter((entry) => entry.id !== skill.id) } : item) }))}><Trash2 /></Button></div>)}<Button size="sm" variant="ghost" onClick={() => update((current) => ({ ...current, skills: current.skills.map((item) => item.id === group.id ? { ...item, skills: [...item.skills, { id: createId("skill"), name: "New skill" }] } : item) }))}><Plus /> Add</Button></div></section>)}<Button variant="outline" onClick={() => update((current) => ({ ...current, skills: [...current.skills, { id: createId("skill-group"), name: "New group", skills: [] }] }))}><Plus /> Add skill group</Button></div></div>;
+  return <div><SectionHeading eyebrow="Resume / Skills" title="Skills inventory" copy="Keep only skills you can support in an interview." /><div className="space-y-4 p-5">{resume.skills.map((group) => <section key={group.id} className="border border-border p-4"><div className="flex gap-2"><Input value={group.name} aria-label="Skill group name" onChange={(event) => update((current) => ({ ...current, skills: current.skills.map((item) => item.id === group.id ? { ...item, name: event.target.value } : item) }))} /><ConfirmDelete label={group.name} onDelete={() => update((current) => ({ ...current, skills: current.skills.filter((item) => item.id !== group.id) }))} /></div><div className="mt-3 flex flex-wrap gap-2">{group.skills.map((skill, index) => <div key={skill.id} className="flex items-center border border-border bg-card"><Input value={skill.name} aria-label={`${group.name} skill ${index + 1}`} className="h-8 w-32 border-0" onChange={(event) => update((current) => ({ ...current, skills: current.skills.map((item) => item.id === group.id ? { ...item, skills: item.skills.map((entry) => entry.id === skill.id ? { ...entry, name: event.target.value } : entry) } : item) }))} /><Button size="icon-sm" variant="ghost" className="size-8" aria-label={`Remove ${skill.name}`} onClick={() => update((current) => ({ ...current, skills: current.skills.map((item) => item.id === group.id ? { ...item, skills: item.skills.filter((entry) => entry.id !== skill.id) } : item) }))}><Trash2 className="size-3.5" /></Button></div>)}<Button size="sm" variant="ghost" onClick={() => update((current) => ({ ...current, skills: current.skills.map((item) => item.id === group.id ? { ...item, skills: [...item.skills, { id: createId("skill"), name: "New skill" }] } : item) }))}><Plus /> Add</Button></div></section>)}<Button variant="outline" onClick={() => update((current) => ({ ...current, skills: [...current.skills, { id: createId("skill-group"), name: "New group", skills: [] }] }))}><Plus /> Add skill group</Button></div></div>;
 }
 
 export function EducationPanel() {

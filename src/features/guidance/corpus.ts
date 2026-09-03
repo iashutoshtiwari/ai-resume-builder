@@ -4,8 +4,18 @@ export const GUIDANCE_SNAPSHOT_VERSION = "engineering-resumes-2026-09-02";
 const ROOT = "https://www.reddit.com/r/EngineeringResumes/wiki/index/";
 const REVIEWED_AT = "2026-09-02";
 
-function chunk(value: Omit<GuidanceChunk, "reviewedAt" | "applicability" | "mandatory"> & Partial<Pick<GuidanceChunk, "applicability" | "mandatory">>): GuidanceChunk {
-  return GuidanceChunkSchema.parse({ reviewedAt: REVIEWED_AT, applicability: "general", mandatory: false, ...value });
+function chunk(
+  value: Omit<GuidanceChunk, "reviewedAt" | "applicability" | "mandatory" | "category" | "locale"> &
+    Partial<Pick<GuidanceChunk, "applicability" | "mandatory" | "category" | "locale">>,
+): GuidanceChunk {
+  return GuidanceChunkSchema.parse({
+    reviewedAt: REVIEWED_AT,
+    applicability: "general",
+    category: "global",
+    locale: "general",
+    mandatory: false,
+    ...value,
+  });
 }
 
 export const GUIDANCE_CORPUS: GuidanceChunk[] = [

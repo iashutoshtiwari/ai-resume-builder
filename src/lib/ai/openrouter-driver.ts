@@ -4,7 +4,10 @@ import { AppError } from "@/lib/ai/errors";
 import { delay } from "@/lib/utils";
 
 const DEFAULT_OPENROUTER_MODEL = "google/gemini-2.5-flash";
-const DEFAULT_OPENROUTER_MAX_TOKENS = 8192;
+// Resume JSON is deliberately bounded by Zod. 4K leaves enough credit headroom
+// for common OpenRouter free/low-credit accounts while still covering normal jobs.
+const DEFAULT_OPENROUTER_MAX_TOKENS = 4096;
+const MAX_OPENROUTER_MAX_TOKENS = 8192;
 
 export function configuredOpenRouterModel(): string {
   return process.env.OPENROUTER_MODEL?.trim() || DEFAULT_OPENROUTER_MODEL;
@@ -14,7 +17,7 @@ function configuredOpenRouterMaxTokens(): number {
   const envVal = process.env.OPENROUTER_MAX_TOKENS?.trim();
   if (envVal) {
     const parsed = Number.parseInt(envVal, 10);
-    if (!Number.isNaN(parsed) && parsed > 0) return parsed;
+    if (!Number.isNaN(parsed) && parsed > 0) return Math.min(parsed, MAX_OPENROUTER_MAX_TOKENS);
   }
   return DEFAULT_OPENROUTER_MAX_TOKENS;
 }
@@ -72,7 +75,7 @@ export async function callOpenRouter(
         if (status === 402 || message.toLowerCase().includes("credits") || message.toLowerCase().includes("afford")) {
           throw new AppError(
             "INSUFFICIENT_CREDITS",
-            `OpenRouter credit error: ${message}. Visit https://openrouter.ai/settings/credits or configure a smaller OPENROUTER_MAX_TOKENS.`,
+            "OpenRouter does not have enough credit for this response size. Reduce OPENROUTER_MAX_TOKENS or add OpenRouter credits, then try again.",
             402,
             false,
           );

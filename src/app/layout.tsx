@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, DM_Sans } from "next/font/google";
+import { Geist, Geist_Mono, DM_Sans, Inter } from "next/font/google";
 import { Toaster } from "sonner";
 import { AppProviders } from "@/components/app-providers";
 import { JsonLd } from "@/features/seo/json-ld";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 
-const geistHeading = Geist({ subsets: ["latin"], variable: "--font-heading" });
-const dmSans = DM_Sans({ subsets: ["latin"], variable: "--font-sans" });
+const dmSansHeading = DM_Sans({subsets:['latin'],variable:'--font-heading'});
+const inter = Inter({subsets:['latin'],variable:'--font-sans'});
 const geist = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
@@ -22,7 +22,7 @@ export const metadata: Metadata = {
     template: "%s | AI Resume Builder",
   },
   description:
-    "Evidence-grounded resume tailoring with ATS-ready LaTeX generation. Import PDF or DOCX, match against job postings, review atomic diffs, and compile locally via WebAssembly.",
+    "Evidence-grounded resume tailoring with ATS-ready LaTeX generation. Import PDF or DOCX, match against job postings, review proposals, and compile through a dedicated TeX service.",
   applicationName: "AI Resume Builder",
   authors: [{ name: "AI Resume Builder Team" }],
   creator: "AI Resume Builder",
@@ -32,8 +32,8 @@ export const metadata: Metadata = {
     "LaTeX resume",
     "ATS friendly resume",
     "evidence grounded resume tailoring",
-    "browser LaTeX compiler",
-    "Siglum WebAssembly",
+    "LaTeX resume compiler",
+    "ATS resume PDF",
     "local resume builder",
     "open source resume builder",
     "ATS resume optimizer",
@@ -49,13 +49,13 @@ export const metadata: Metadata = {
     siteName: "AI Resume Builder",
     title: "AI Resume Builder — Evidence-Grounded LaTeX Resume Tailoring",
     description:
-      "Evidence-grounded resume tailoring and ATS-ready LaTeX generation. Match job descriptions with zero hallucinations and local in-browser compilation.",
+      "Evidence-grounded resume tailoring and ATS-ready LaTeX generation. Match job descriptions without inventing experience.",
   },
   twitter: {
     card: "summary_large_image",
     title: "AI Resume Builder — Evidence-Grounded LaTeX Resume Tailoring",
     description:
-      "Evidence-grounded resume tailoring and ATS-ready LaTeX generation. Match job descriptions with zero hallucinations and local in-browser compilation.",
+      "Evidence-grounded resume tailoring and ATS-ready LaTeX generation. Match job descriptions without inventing experience.",
   },
   robots: {
     index: true,
@@ -72,7 +72,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={cn("dark", geist.variable, geistMono.variable, "font-sans", dmSans.variable, geistHeading.variable)}>
+    <html lang="en" className={cn("dark", geist.variable, geistMono.variable, "font-sans", inter.variable, dmSansHeading.variable)}>
       <head>
         <JsonLd />
       </head>

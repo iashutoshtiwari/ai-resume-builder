@@ -56,20 +56,61 @@ export const EducationSchema = z.object({
   details: z.array(TextItemSchema).max(20),
 });
 
+export const CertificationSchema = z.object({
+  id: IdSchema,
+  name: z.string().min(1).max(200),
+  issuer: z.string().max(200).optional(),
+  date: z.string().max(80).optional(),
+  url: z.string().max(2048).optional(),
+});
+
+export const AchievementSchema = z.object({
+  id: IdSchema,
+  title: z.string().min(1).max(200),
+  description: z.string().max(600).optional(),
+  date: z.string().max(80).optional(),
+});
+
+export const CareerStageSchema = z.enum([
+  "student",
+  "new-graduate",
+  "early-career",
+  "mid-level",
+  "senior",
+  "staff-principal",
+  "career-changer",
+  "returning-professional",
+]);
+
 export const ResumeSchema = z.object({
   version: z.literal(1),
   basics: ResumeBasicsSchema,
+  summary: z.string().max(1000).optional(),
   skills: z.array(SkillGroupSchema).max(30),
   experience: z.array(ExperienceSchema).max(30),
   projects: z.array(ProjectSchema).max(30),
   education: z.array(EducationSchema).max(20),
+  certifications: z.array(CertificationSchema).max(30).optional(),
+  achievements: z.array(AchievementSchema).max(30).optional(),
 });
 
 export type Resume = z.infer<typeof ResumeSchema>;
+export type ResumeDocument = Resume;
 export type TextItem = z.infer<typeof TextItemSchema>;
 export type Experience = z.infer<typeof ExperienceSchema>;
 export type Project = z.infer<typeof ProjectSchema>;
 export type SkillGroup = z.infer<typeof SkillGroupSchema>;
 export type Education = z.infer<typeof EducationSchema>;
+export type Certification = z.infer<typeof CertificationSchema>;
+export type Achievement = z.infer<typeof AchievementSchema>;
+export type CareerStage = z.infer<typeof CareerStageSchema>;
 
-export type ResumeSection = "overview" | "experience" | "projects" | "skills" | "education";
+export type ResumeSection =
+  | "overview"
+  | "summary"
+  | "experience"
+  | "projects"
+  | "skills"
+  | "education"
+  | "certifications"
+  | "achievements";

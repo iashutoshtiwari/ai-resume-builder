@@ -75,19 +75,19 @@ export function GuidancePanel() {
       <header className="border-b border-border px-5 py-5">
         <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-primary">Guidance / ATS Audit</p>
         <div className="mt-2 flex items-center justify-between">
-          <h2 className="text-xl font-semibold tracking-tight">EngineeringResumes Guidance</h2>
+          <h2 className="text-xl font-semibold tracking-tight">Resume guidance</h2>
           <Badge variant="outline" className="font-mono text-[10px]">
             {GUIDANCE_SNAPSHOT_VERSION}
           </Badge>
         </div>
         <p className="mt-1 text-sm text-muted-foreground">
-          Deterministic checks and advisory principles based on a curated snapshot of the r/EngineeringResumes community wiki. No arbitrary ATS score is computed.
+          Deterministic checks and advisory principles from our curated engineering-resume methodology. No arbitrary ATS score is computed.
         </p>
       </header>
 
       <div className="flex-1 overflow-y-auto space-y-6 p-5">
         {/* Regional & Advisory Disclaimer */}
-        <div className="rounded border border-blue-200/60 bg-blue-50/50 p-3.5 text-xs text-blue-900 dark:border-blue-900/40 dark:bg-blue-950/20 dark:text-blue-200">
+        <div className="rounded-none border border-blue-200/60 bg-blue-50/50 p-3.5 text-xs text-blue-900 dark:border-blue-900/40 dark:bg-blue-950/20 dark:text-blue-200">
           <div className="flex items-start gap-2">
             <Info className="size-4 shrink-0 mt-0.5 text-blue-600 dark:text-blue-400" />
             <div className="leading-relaxed">
@@ -97,7 +97,7 @@ export function GuidancePanel() {
         </div>
 
         {/* Page Length Status */}
-        <section className="rounded-lg border border-border bg-background p-4 space-y-2">
+        <section className="rounded-none border border-border bg-background p-4 space-y-2">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-semibold flex items-center gap-1.5">
               <FileText className="size-4 text-primary" /> Page Length Status
@@ -130,15 +130,15 @@ export function GuidancePanel() {
 
         {/* Summary counts bar */}
         <div className="grid grid-cols-3 gap-3">
-          <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-center">
+          <div className="rounded-none border border-destructive/30 bg-destructive/5 p-3 text-center">
             <div className="font-mono text-xl font-bold text-destructive">{actionNeeded.length}</div>
             <div className="text-[11px] font-medium text-muted-foreground">Action needed</div>
           </div>
-          <div className="rounded-md border border-amber-300/40 bg-amber-500/5 p-3 text-center">
+          <div className="rounded-none border border-amber-300/40 bg-amber-500/5 p-3 text-center">
             <div className="font-mono text-xl font-bold text-amber-700 dark:text-amber-300">{reviewNeeded.length}</div>
             <div className="text-[11px] font-medium text-muted-foreground">Review</div>
           </div>
-          <div className="rounded-md border border-emerald-500/30 bg-emerald-500/5 p-3 text-center">
+          <div className="rounded-none border border-emerald-500/30 bg-emerald-500/5 p-3 text-center">
             <div className="font-mono text-xl font-bold text-emerald-700 dark:text-emerald-400">{passed.length}</div>
             <div className="text-[11px] font-medium text-muted-foreground">Passed</div>
           </div>
@@ -197,14 +197,14 @@ export function GuidancePanel() {
               <p className="text-xs text-muted-foreground mt-0.5">
                 {workspace.targetJob
                   ? "Deterministically ranked based on resume content, job description keywords, and task rules."
-                  : "Key guidelines for formatting and content from the EngineeringResumes wiki."}
+                  : "Key guidelines for formatting and content from the curated methodology."}
               </p>
             </div>
           </div>
 
           <div className="space-y-3">
             {retrievedContext.chunks.map((chunk) => (
-              <article key={chunk.id} className="rounded-lg border border-border bg-background p-3.5 space-y-2">
+              <article key={chunk.id} className="rounded-none border border-border bg-background p-3.5 space-y-2">
                 <div className="flex items-start justify-between gap-2">
                   <h4 className="text-xs font-semibold">{chunk.title}</h4>
                   <a
@@ -219,12 +219,12 @@ export function GuidancePanel() {
                 <p className="text-xs text-muted-foreground leading-relaxed">{chunk.guidance}</p>
                 <div className="flex flex-wrap gap-1 pt-1">
                   {chunk.tags.slice(0, 4).map((tag) => (
-                    <span key={tag} className="rounded bg-muted px-1.5 py-0.5 font-mono text-[9px] text-muted-foreground">
+                    <span key={tag} className="rounded-none bg-muted px-1.5 py-0.5 font-mono text-[9px] text-muted-foreground">
                       #{tag}
                     </span>
                   ))}
                   {chunk.applicability === "us-canada" && (
-                    <span className="rounded bg-blue-500/10 px-1.5 py-0.5 font-mono text-[9px] text-blue-700 dark:text-blue-300">
+                    <span className="rounded-none bg-blue-500/10 px-1.5 py-0.5 font-mono text-[9px] text-blue-700 dark:text-blue-300">
                       US/Canada
                     </span>
                   )}
@@ -249,7 +249,7 @@ function FindingCard({ finding }: { finding: GuidanceFinding }) {
       : "border-emerald-500/25 bg-emerald-500/5";
 
   return (
-    <div className={`rounded-md border p-3 ${borderClass}`}>
+    <div className={`rounded-none border p-3 ${borderClass}`}>
       <div className="flex items-start justify-between gap-2">
         <span className="text-xs font-semibold">{finding.title}</span>
         {corpusItem && (

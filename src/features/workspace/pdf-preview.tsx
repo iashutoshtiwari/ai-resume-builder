@@ -89,7 +89,7 @@ export function PdfPreview({ compact = false }: { compact?: boolean }) {
   const controls = (
     <div className="flex items-center gap-1">
       <Button
-        size="icon"
+        size="icon-sm"
         variant="ghost"
         onClick={() => setZoom((value) => Math.max(0.4, value - 0.1))}
         aria-label="Zoom out"
@@ -100,14 +100,14 @@ export function PdfPreview({ compact = false }: { compact?: boolean }) {
         {Math.round(zoom * 100)}%
       </span>
       <Button
-        size="icon"
+        size="icon-sm"
         variant="ghost"
         onClick={() => setZoom((value) => Math.min(1.8, value + 0.1))}
         aria-label="Zoom in"
       >
         <Plus />
       </Button>
-      <Button size="icon" variant="ghost" onClick={() => setZoom(0.82)} aria-label="Fit page">
+      <Button size="icon-sm" variant="ghost" onClick={() => setZoom(0.82)} aria-label="Fit page">
         <Maximize2 />
       </Button>
     </div>
@@ -136,7 +136,7 @@ export function PdfPreview({ compact = false }: { compact?: boolean }) {
 
         <div className="flex gap-1">
           <Button
-            size="icon"
+            size="icon-sm"
             variant="ghost"
             disabled={!pdfBlob}
             onClick={() => pdfBlob && downloadBlob(pdfBlob, `${filename}.pdf`)}
@@ -145,7 +145,7 @@ export function PdfPreview({ compact = false }: { compact?: boolean }) {
             <Download />
           </Button>
           <Button
-            size="icon"
+            size="icon-sm"
             variant="ghost"
             onClick={() => downloadBlob(new Blob([source], { type: "application/x-tex" }), `${filename}.tex`)}
             aria-label="Download LaTeX"
@@ -174,7 +174,7 @@ export function PdfPreview({ compact = false }: { compact?: boolean }) {
               <FileWarning className="mx-auto size-6 text-zinc-400" />
               <p className="mt-3 text-sm font-medium">No compiled preview yet</p>
               <p className="mt-1 text-xs leading-5 text-zinc-500">
-                Compilation compiles your resume into an ATS-vetted PDF via the TeX Live microservice.
+                Compile your resume into a clean, text-based PDF through the TeX Live service.
               </p>
               <Button
                 className="mt-5 bg-zinc-950 text-white hover:bg-zinc-800"
@@ -217,9 +217,8 @@ export function PdfPreview({ compact = false }: { compact?: boolean }) {
               </div>
               <div className="rounded border border-amber-300/80 bg-amber-50 px-2.5 py-1.5 text-[11px] leading-4 text-amber-900">
                 <span className="font-semibold">Multi-page resume ({pages} pages):</span> The
-                EngineeringResumes guide recommends 1 page for most early- and mid-career engineers. A
-                second page may be justified for candidates with roughly 10+ years of relevant experience
-                or senior scope. PDF export remains fully available.
+                Aim for one page when it keeps the document readable and preserves relevant evidence. A
+                second page can be appropriate for substantial relevant experience or senior scope.
               </div>
             </div>
           )}

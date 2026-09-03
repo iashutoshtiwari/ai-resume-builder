@@ -7,7 +7,7 @@ A lightweight, specialized LaTeX compilation microservice packaged in Docker and
 - **Curated Resume Packages & Typography**: Pre-installs serif (`XCharter`, `Latin Modern`, `newtx`, `newpx`, `ebgaramond`, `libertine`), sans-serif (`TeX Gyre Heros / Helvetica`, `Lato`, `Roboto`, `Source Sans Pro`, `Inter`, `Fira Sans`), monospace (`Inconsolata`), and essential resume styling packages (`titlesec`, `geometry`, `enumitem`, `tabularx`, `fontawesome5`, `hyperref`, etc.).
 - **100% Zero-Cost Guarantee**: Leverages GitHub Container Registry (`ghcr.io`) for unlimited free public container hosting and Google Cloud Run Free Tier (2M requests, 180k vCPU-seconds, 360k GiB-seconds RAM, 1 GiB egress per month).
 - **Scale-to-Zero**: Zero instances active when idle (`--min-instances 0`) = $0 compute or memory cost.
-- **Fast & Sandboxed**: Uses `latexmk` with `-no-shell-escape`, run as an unprivileged user (`latexuser`), inside disposable compile directories that are cleaned up automatically.
+- **Fast & Sandboxed**: Uses `latexmk` with `-no-shell-escape`, a 25-second compile limit, an unprivileged user (`latexuser`), and disposable per-request directories that are always cleaned up.
 
 ---
 
@@ -33,7 +33,7 @@ To test locally before deploying:
 docker build -t resume-latex-compiler docker/latex-compiler
 
 # 2. Run locally on port 8080
-docker run -d -p 8080:8080 --name latex-compiler-test resume-latex-compiler
+docker run -d --read-only --tmpfs /tmp:rw,noexec,nosuid,size=64m -p 8080:8080 --name latex-compiler-test resume-latex-compiler
 
 # 3. Health check
 curl http://localhost:8080/health
@@ -46,6 +46,8 @@ curl -X POST http://localhost:8080/compile \
 # 5. Clean up
 docker stop latex-compiler-test && docker rm latex-compiler-test
 ```
+
+For production, apply the equivalent CPU, memory, process, temporary-disk, and outbound-network restrictions in the deployment platform. The service never downloads TeX packages at compile time; add required packages to the image instead.
 
 ---
 

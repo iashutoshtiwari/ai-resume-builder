@@ -67,13 +67,24 @@ const PRESETS: Array<{
 ];
 
 const SECTION_LABELS: Record<RenderedSection, string> = {
+  summary: "Summary",
   skills: "Skills",
   experience: "Experience",
   projects: "Projects",
   education: "Education",
+  certifications: "Certifications",
+  achievements: "Achievements",
 };
 
-const ALL_SECTIONS: RenderedSection[] = ["skills", "experience", "projects", "education"];
+const ALL_SECTIONS: RenderedSection[] = [
+  "summary",
+  "skills",
+  "experience",
+  "projects",
+  "education",
+  "certifications",
+  "achievements",
+];
 
 function moveSection(items: RenderedSection[], from: number, to: number): RenderedSection[] {
   const next = [...items];
@@ -151,7 +162,7 @@ function SortableSectionItem({
             checked={enabled}
             onChange={onToggle}
             disabled={enabled && total === 1}
-            className="size-3.5 rounded border-border"
+            className="size-3.5 rounded-none border-border"
           />
           <span className="sr-only">Toggle ${SECTION_LABELS[id]}</span>
         </label>
@@ -225,13 +236,13 @@ export function FormatPanel() {
           </Button>
         </div>
         <p className="mt-1 text-sm text-muted-foreground">
-          Deterministic single-column styling vetted against r/EngineeringResumes ATS guidelines. Changes invalidate the preview and require recompilation.
+          Deterministic single-column styling designed for text-based, ATS-friendly output. Changes invalidate the preview and require recompilation.
         </p>
       </header>
 
       <div className="flex-1 overflow-y-auto space-y-6 p-5">
         {workspace.manualLatex !== null && (
-          <div className="rounded border border-amber-300/80 bg-amber-500/10 px-4 py-3 text-xs leading-5 text-amber-900 dark:text-amber-200">
+          <div className="rounded-none border border-amber-300/80 bg-amber-500/10 px-4 py-3 text-xs leading-5 text-amber-900 dark:text-amber-200">
             <span className="font-semibold">Manual LaTeX override in use:</span> Changing presentation options updates generated LaTeX in the background, but manual LaTeX edits take precedence until reset. The ATS format audit labels manual LaTeX as unverified.
           </div>
         )}
@@ -253,7 +264,7 @@ export function FormatPanel() {
                   key={item.id}
                   type="button"
                   onClick={() => handleApplyPreset(item.preset)}
-                  className={`flex flex-col text-left rounded-lg border p-3.5 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                  className={`flex flex-col text-left rounded-none border p-3.5 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
                     active
                       ? "border-primary bg-primary/5 shadow-sm ring-1 ring-primary"
                       : "border-border hover:border-muted-foreground/40 hover:bg-muted/30"
@@ -294,7 +305,7 @@ export function FormatPanel() {
                   <div className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                     Serif Typography
                   </div>
-                  <SelectItem value="xcharter">XCharter (Serif · #1 EngineeringResumes)</SelectItem>
+                  <SelectItem value="xcharter">XCharter (Serif)</SelectItem>
                   <SelectItem value="latin-modern">Latin Modern (Serif · Classic Academic)</SelectItem>
                   <SelectItem value="newtx">New TX (Serif · Times Roman dense)</SelectItem>
                   <SelectItem value="newpx">New PX (Serif · Palatino executive)</SelectItem>

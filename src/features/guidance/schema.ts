@@ -1,16 +1,33 @@
 import { z } from "zod";
 
-export const GuidanceTaskSchema = z.enum(["format", "analyze", "tailor", "proofread"]);
-export const GuidanceSectionSchema = z.enum(["global", "contact", "skills", "experience", "projects", "education", "dates", "bullets"]);
+export const GuidanceTaskSchema = z.enum(["format", "analyze", "tailor", "proofread", "build"]);
+export const GuidanceSectionSchema = z.enum([
+  "global",
+  "contact",
+  "summary",
+  "skills",
+  "experience",
+  "projects",
+  "education",
+  "certifications",
+  "achievements",
+  "dates",
+  "bullets",
+]);
+
+export const GuidanceCategorySchema = z.enum(["global", "career-stage", "locale", "sections"]);
 
 export const GuidanceChunkSchema = z.object({
-  id: z.string().regex(/^er-[a-z0-9-]+$/),
+  id: z.string().min(1).max(160),
   title: z.string().min(1).max(120),
-  guidance: z.string().min(1).max(700),
-  sourceUrl: z.url().startsWith("https://www.reddit.com/r/EngineeringResumes/wiki/"),
-  sourceSection: z.string().min(1).max(120),
-  reviewedAt: z.iso.date(),
-  applicability: z.enum(["general", "us-canada"]),
+  guidance: z.string().min(1).max(1000),
+  category: GuidanceCategorySchema.optional(),
+  careerStages: z.array(z.string()).optional(),
+  locale: z.enum(["general", "india", "us-canada"]).optional(),
+  sourceUrl: z.string().optional(),
+  sourceSection: z.string().max(120).optional(),
+  reviewedAt: z.string().optional(),
+  applicability: z.enum(["general", "india", "us-canada"]).default("general"),
   tasks: z.array(GuidanceTaskSchema).min(1),
   sections: z.array(GuidanceSectionSchema).min(1),
   tags: z.array(z.string().min(1).max(60)).min(1).max(20),
@@ -18,8 +35,8 @@ export const GuidanceChunkSchema = z.object({
 });
 
 export const GuidanceContextSchema = z.object({
-  snapshotVersion: z.string().min(1).max(40),
-  chunks: z.array(GuidanceChunkSchema).max(10),
+  snapshotVersion: z.string().min(1).max(60),
+  chunks: z.array(GuidanceChunkSchema).max(16),
 });
 
 export const GuidanceFindingSchema = z.object({

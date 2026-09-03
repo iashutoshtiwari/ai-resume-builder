@@ -20,7 +20,7 @@ describe("/api/compile route handler", () => {
       expect(data).toEqual({
         available: false,
         configured: false,
-        message: "LATEX_COMPILER_URL environment variable is not configured.",
+        message: "PDF compilation is not configured for this environment.",
       });
     });
 
@@ -58,7 +58,7 @@ describe("/api/compile route handler", () => {
       expect(response.status).toBe(503);
       const data = await response.json();
       expect(data.success).toBe(false);
-      expect(data.errors[0]?.message).toContain("Remote LaTeX compiler is not configured");
+      expect(data.errors[0]?.message).toContain("PDF compilation is not configured");
     });
 
     it("returns 400 when request body is not valid JSON", async () => {
@@ -139,7 +139,7 @@ describe("/api/compile route handler", () => {
       expect(response.status).toBe(502);
       const data = await response.json();
       expect(data.success).toBe(false);
-      expect(data.errors[0]?.message).toContain("Connection refused");
+      expect(data.errors[0]?.message).toContain("PDF compilation is temporarily unavailable");
     });
   });
 });
