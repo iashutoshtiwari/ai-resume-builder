@@ -140,3 +140,17 @@ export function getResumeGuidance(input: {
 
   return [...mandatory, ...scored];
 }
+
+export function compactGuidanceForPrompt(guidance: GuidanceContext): {
+  snapshotVersion: string;
+  rules: Array<{ id: string; title: string; guidance: string }>;
+} {
+  return {
+    snapshotVersion: guidance.snapshotVersion,
+    rules: guidance.chunks.map((c) => ({
+      id: c.id,
+      title: c.title,
+      guidance: c.guidance,
+    })),
+  };
+}

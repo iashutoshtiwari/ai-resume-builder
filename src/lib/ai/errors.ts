@@ -8,7 +8,9 @@ export type ApiErrorCode =
   | "PROVIDER_UNAVAILABLE"
   | "INVALID_MODEL_OUTPUT"
   | "SEMANTIC_VALIDATION_FAILED"
-  | "REQUEST_TIMEOUT";
+  | "REQUEST_TIMEOUT"
+  | "FORBIDDEN"
+  | "DAILY_QUOTA_EXCEEDED";
 
 export class AppError extends Error {
   constructor(

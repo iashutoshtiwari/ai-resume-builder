@@ -4,6 +4,8 @@ import { RenderedSectionSchema } from "@/features/presentation/schema";
 import { CandidateProfileSchema, candidateProfileToResumeDocument } from "@/features/resume/candidate-profile";
 import { apiErrorResponse } from "@/lib/ai/errors";
 import { getResumeAIProvider } from "@/lib/ai/factory";
+import { enforceAiRouteGuard } from "@/lib/ai/guard";
+import { getCachedAiResponse, setCachedAiResponse } from "@/lib/ai/cache";
 import { dedupeRequest, parseJsonRequest, requestKey } from "@/lib/ai/request";
 
 export const runtime = "nodejs";
@@ -24,15 +26,23 @@ export async function POST(request: Request) {
       careerStage: input.profile.careerStage,
       locale: input.locale,
     });
+    const providerHeader = (request.headers.get("x-ai-provider") || undefined) as import("@/lib/ai/common-provider").AIProviderType | undefined;
     const key = await requestKey("build-resume", {
       profile: input.profile,
       sections: input.sections,
       locale: input.locale,
+      provider: providerHeader,
     });
 
+    const cached = getCachedAiResponse(key);
+    if (cached) return Response.json(cached);
+
+    await enforceAiRouteGuard(request, "heavy");
+
     const result = await dedupeRequest(key, () =>
-      getResumeAIProvider().buildResume(input.profile, input.sections, guidance),
+      getResumeAIProvider(providerHeader).buildResume(input.profile, input.sections, guidance),
     );
+    setCachedAiResponse(key, result);
 
     return Response.json(result);
   } catch (error) {

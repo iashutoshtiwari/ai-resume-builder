@@ -1,6 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { ResumeSchema } from "@/features/resume/schema";
-import { extractAndParseJson, normalizeRawJobAnalysis, normalizeRawResume } from "./normalize";
+import {
+  extractAndParseJson,
+  extractNormalizedResume,
+  normalizeRawFullTailoring,
+  normalizeRawJobAnalysis,
+  normalizeRawProofreadingResponse,
+  normalizeRawResume,
+  normalizeRawTailoringResponse,
+} from "./normalize";
+
 
 describe("normalizeRawResume", () => {
   it("normalizes an unstructured / lenient LLM output into strict valid ResumeSchema", () => {
@@ -125,3 +134,78 @@ describe("extractAndParseJson", () => {
     expect(extractAndParseJson(trailingCommaJson)).toEqual({ items: [1, 2], name: "test" });
   });
 });
+
+describe("Specialized AI Response Normalizers", () => {
+  it("normalizes a raw array or wrapped object into valid TailoringResponse structure", () => {
+    const rawArray = [
+      { id: "chg-1", target: "basics-headline", before: "A", after: "B" },
+    ];
+    const fromArray = normalizeRawTailoringResponse(rawArray) as { changes: unknown[]; gaps: unknown[] };
+    expect(fromArray.changes).toHaveLength(1);
+    expect(fromArray.gaps).toEqual([]);
+
+    const wrapped = {
+      data: {
+        changes: [{ id: "chg-2" }],
+        gaps: [{ id: "gap-1" }],
+      },
+    };
+    const fromWrapped = normalizeRawTailoringResponse(wrapped) as { changes: unknown[]; gaps: unknown[] };
+    expect(fromWrapped.changes).toHaveLength(1);
+    expect(fromWrapped.gaps).toHaveLength(1);
+  });
+
+  it("normalizes a raw array or wrapped object into valid ProofreadingResponse structure", () => {
+    const rawArray = [
+      { id: "prf-1", target: "basics-headline", before: "A", after: "B" },
+    ];
+    const fromArray = normalizeRawProofreadingResponse(rawArray) as { changes: unknown[] };
+    expect(fromArray.changes).toHaveLength(1);
+
+    const wrapped = {
+      result: {
+        corrections: [{ id: "prf-2" }],
+      },
+    };
+    const fromWrapped = normalizeRawProofreadingResponse(wrapped) as { changes: unknown[] };
+    expect(fromWrapped.changes).toHaveLength(1);
+  });
+
+  it("normalizes full tailoring response providing fallback summary and unwrapped resume", () => {
+    const raw = {
+      tailoredResume: {
+        basics: { name: "Test Candidate" },
+        skills: [],
+        experience: [],
+        projects: [],
+        education: [],
+      },
+    };
+
+    const normalized = normalizeRawFullTailoring(raw) as {
+      tailoredResume: { version: number; basics: { name: string } };
+      summary: string;
+      changes: unknown[];
+      gaps: unknown[];
+    };
+
+    expect(normalized.tailoredResume.version).toBe(1);
+    expect(normalized.tailoredResume.basics.name).toBe("Test Candidate");
+    expect(normalized.summary).toContain("Tailored resume");
+    expect(normalized.changes).toEqual([]);
+    expect(normalized.gaps).toEqual([]);
+  });
+
+  it("extractNormalizedResume extracts inner resume when wrapped or unwrapped", () => {
+    const rawResume = {
+      basics: { name: "Direct Name" },
+      skills: [],
+      experience: [],
+      projects: [],
+      education: [],
+    };
+    const extracted = extractNormalizedResume(rawResume) as { basics: { name: string } };
+    expect(extracted.basics.name).toBe("Direct Name");
+  });
+});
+

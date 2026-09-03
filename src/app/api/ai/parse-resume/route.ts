@@ -2,6 +2,8 @@ import { z } from "zod";
 import { KnownTemplateImporter } from "@/features/latex/importer";
 import { apiErrorResponse, AppError } from "@/lib/ai/errors";
 import { getResumeAIProvider } from "@/lib/ai/factory";
+import { enforceAiRouteGuard } from "@/lib/ai/guard";
+import { getCachedAiResponse, setCachedAiResponse } from "@/lib/ai/cache";
 import { dedupeRequest, parseJsonRequest, requestKey } from "@/lib/ai/request";
 
 export const runtime = "nodejs";
@@ -25,7 +27,7 @@ export async function POST(request: Request) {
       throw new AppError("PAYLOAD_TOO_LARGE", "Resume content must be 200 KB or smaller.", 413, false);
     }
 
-    // If it looks like LaTeX, try deterministic known-template parsing first
+    // If it looks like LaTeX, try deterministic known-template parsing first (0 tokens)
     if (content.includes("\\documentclass") || content.includes("\\begin{document}")) {
       const known = new KnownTemplateImporter();
       if (known.canHandle(content)) {
@@ -34,8 +36,16 @@ export async function POST(request: Request) {
       }
     }
 
-    const key = await requestKey("parse-resume", { content });
-    const result = await dedupeRequest(key, () => getResumeAIProvider().parseLatexResume(content));
+    const providerHeader = (request.headers.get("x-ai-provider") || undefined) as import("@/lib/ai/common-provider").AIProviderType | undefined;
+    const key = await requestKey("parse-resume", { content, provider: providerHeader });
+    const cached = getCachedAiResponse(key);
+    if (cached) return Response.json(cached);
+
+    // Apply abuse prevention guardrails (origin, daily limit, rate limiting)
+    await enforceAiRouteGuard(request, "heavy");
+
+    const result = await dedupeRequest(key, () => getResumeAIProvider(providerHeader).parseLatexResume(content));
+    setCachedAiResponse(key, result);
     return Response.json(result);
   } catch (error) {
     return apiErrorResponse(error);

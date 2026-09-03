@@ -4,6 +4,8 @@ import { JobAnalysisResponseSchema, TargetJobSchema } from "@/features/jobs/sche
 import { retrieveGuidance } from "@/features/guidance/retrieve";
 import { apiErrorResponse } from "@/lib/ai/errors";
 import { getResumeAIProvider } from "@/lib/ai/factory";
+import { enforceAiRouteGuard } from "@/lib/ai/guard";
+import { getCachedAiResponse, setCachedAiResponse } from "@/lib/ai/cache";
 import { dedupeRequest, parseJsonRequest, requestKey } from "@/lib/ai/request";
 
 export const runtime = "nodejs";
@@ -19,9 +21,16 @@ export async function POST(request: Request) {
   try {
     const input = await parseJsonRequest(request, InputSchema, 260_000);
     const guidance = retrieveGuidance({ task: "tailor", resume: input.resume, targetJob: input.targetJob });
-    const key = await requestKey("tailor", { ...input, guidance });
+    const providerHeader = (request.headers.get("x-ai-provider") || undefined) as import("@/lib/ai/common-provider").AIProviderType | undefined;
+    const key = await requestKey("tailor", { ...input, guidance, provider: providerHeader });
+
+    const cached = getCachedAiResponse(key);
+    if (cached) return Response.json(cached);
+
+    await enforceAiRouteGuard(request, "heavy");
+
     const result = await dedupeRequest(key, () =>
-      getResumeAIProvider().tailorResume(
+      getResumeAIProvider(providerHeader).tailorResume(
         input.resume,
         input.targetJob,
         input.analysis,
@@ -29,6 +38,7 @@ export async function POST(request: Request) {
         guidance,
       ),
     );
+    setCachedAiResponse(key, result);
     return Response.json(result);
   } catch (error) {
     return apiErrorResponse(error);

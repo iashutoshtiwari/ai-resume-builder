@@ -2,14 +2,29 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  detectCareerStageDetailed,
+  getRecommendedSections,
+  STAGE_LABEL,
+  type CareerStage,
+} from "@/features/assessment/scoring";
 import type { ImportResult } from "@/features/latex/importer";
+import type { RenderedSection } from "@/features/presentation/schema";
+import { resumeToCandidateProfile } from "@/features/resume/candidate-profile";
 import { sampleResume } from "@/features/resume/fixtures/sample-resume";
+import { LandingContent } from "@/features/seo/landing-content";
 import {
   extractTextFromFile,
   type SupportedFormat,
 } from "@/lib/document/extract";
-import { LandingContent } from "@/features/seo/landing-content";
 import { useWorkspaceStore } from "@/store/workspace-store";
 import {
   ArrowRight,
@@ -25,24 +40,10 @@ import {
   Sparkles,
   Upload,
 } from "lucide-react";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  detectCareerStageDetailed,
-  getRecommendedSections,
-  STAGE_LABEL,
-  type CareerStage,
-} from "@/features/assessment/scoring";
-import type { RenderedSection } from "@/features/presentation/schema";
-import { resumeToCandidateProfile } from "@/features/resume/candidate-profile";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { AiProviderSwitch } from "@/features/workspace/ai-provider-switch";
 
 type ApiError = { error?: { message?: string } };
 
@@ -84,8 +85,12 @@ export function ImportScreen({
   const [busy, setBusy] = useState(false);
   const [loadingStep, setLoadingStep] = useState<string>("");
   const [selectedStage, setSelectedStage] = useState<CareerStage | null>(null);
-  const [selectedLocale, setSelectedLocale] = useState<"india" | "us-canada">("india");
-  const [selectedSections, setSelectedSections] = useState<RenderedSection[]>([]);
+  const [selectedLocale, setSelectedLocale] = useState<"india" | "us-canada">(
+    "india",
+  );
+  const [selectedSections, setSelectedSections] = useState<RenderedSection[]>(
+    [],
+  );
   const [isBuilding, setIsBuilding] = useState(false);
   const {
     hydrate,
@@ -114,7 +119,10 @@ export function ImportScreen({
     try {
       const response = await fetch("/api/ai/parse-resume", {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: {
+          "content-type": "application/json",
+          "x-ai-provider": useWorkspaceStore.getState().activeAiProvider,
+        },
         body: JSON.stringify({ source: content }),
       });
       const body = (await response.json()) as ImportResult | ApiError;
@@ -182,14 +190,20 @@ export function ImportScreen({
     const profile = resumeToCandidateProfile(currentResult.resume);
     const stageInfo = detectCareerStageDetailed(currentResult.resume);
     const activeStage = selectedStage ?? stageInfo.stage;
-    const sectionRecs = getRecommendedSections(activeStage, currentResult.resume);
-    const activeSections = selectedSections.length > 0 ? selectedSections : sectionRecs.recommended;
+    const sectionRecs = getRecommendedSections(
+      activeStage,
+      currentResult.resume,
+    );
+    const activeSections =
+      selectedSections.length > 0 ? selectedSections : sectionRecs.recommended;
 
     const totalBullets = [
       ...currentResult.resume.experience.flatMap((e) => e.bullets),
       ...currentResult.resume.projects.flatMap((p) => p.bullets),
     ].length;
-    const totalSkills = currentResult.resume.skills.flatMap((g) => g.skills).length;
+    const totalSkills = currentResult.resume.skills.flatMap(
+      (g) => g.skills,
+    ).length;
     const certsCount = currentResult.resume.certifications?.length ?? 0;
     const achCount = currentResult.resume.achievements?.length ?? 0;
 
@@ -209,7 +223,10 @@ export function ImportScreen({
       try {
         const response = await fetch("/api/ai/build-resume", {
           method: "POST",
-          headers: { "content-type": "application/json" },
+          headers: {
+            "content-type": "application/json",
+            "x-ai-provider": useWorkspaceStore.getState().activeAiProvider,
+          },
           body: JSON.stringify({
             profile: { ...profile, careerStage: activeStage },
             sections: activeSections,
@@ -294,9 +311,10 @@ export function ImportScreen({
               </h1>
             </div>
             <div className="flex items-center gap-2">
+              <AiProviderSwitch />
               <Badge variant="outline" className="gap-1.5">
-                <Check className="size-3 text-emerald-500" /> {result.confidence}{" "}
-                confidence
+                <Check className="size-3 text-emerald-500" />{" "}
+                {result.confidence} confidence
               </Badge>
             </div>
           </div>
@@ -377,9 +395,7 @@ export function ImportScreen({
                     </p>
                   </div>
                   <div className="bg-card p-3 sm:p-4">
-                    <p className="font-mono text-xl sm:text-2xl">
-                      {achCount}
-                    </p>
+                    <p className="font-mono text-xl sm:text-2xl">{achCount}</p>
                     <p className="mt-0.5 text-xs text-muted-foreground">
                       Achievements / Honors
                     </p>
@@ -420,7 +436,11 @@ export function ImportScreen({
                       </SelectTrigger>
                       <SelectContent>
                         {STAGES.map((stage) => (
-                          <SelectItem key={stage} value={stage} className="text-xs">
+                          <SelectItem
+                            key={stage}
+                            value={stage}
+                            className="text-xs"
+                          >
                             {STAGE_LABEL[stage]}
                           </SelectItem>
                         ))}
@@ -481,15 +501,20 @@ export function ImportScreen({
             <aside className="flex flex-col justify-between space-y-5 bg-background/40 p-5 sm:p-6">
               <div className="space-y-5">
                 <div>
-                  <h2 className="text-sm font-medium">Hiring Locale Preference</h2>
+                  <h2 className="text-sm font-medium">
+                    Hiring Locale Preference
+                  </h2>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    Tunes section emphasis, degree terminology, and date formatting.
+                    Tunes section emphasis, degree terminology, and date
+                    formatting.
                   </p>
                   <div className="mt-3 flex gap-2">
                     <Button
                       type="button"
                       size="sm"
-                      variant={selectedLocale === "india" ? "default" : "outline"}
+                      variant={
+                        selectedLocale === "india" ? "default" : "outline"
+                      }
                       className="flex-1 text-xs"
                       onClick={() => setSelectedLocale("india")}
                     >
@@ -498,7 +523,9 @@ export function ImportScreen({
                     <Button
                       type="button"
                       size="sm"
-                      variant={selectedLocale === "us-canada" ? "default" : "outline"}
+                      variant={
+                        selectedLocale === "us-canada" ? "default" : "outline"
+                      }
                       className="flex-1 text-xs"
                       onClick={() => setSelectedLocale("us-canada")}
                     >
@@ -522,8 +549,8 @@ export function ImportScreen({
                     </ul>
                   ) : (
                     <p className="mt-3 text-xs text-muted-foreground">
-                      All expected resume entities were mapped into the structured
-                      schema.
+                      All expected resume entities were mapped into the
+                      structured schema.
                     </p>
                   )}
                 </div>
@@ -585,9 +612,12 @@ export function ImportScreen({
           </div>
           <span className="text-sm font-semibold">AI Resume Builder</span>
         </div>
-        <Badge variant="outline" className="font-mono text-[10px]">
-          v0.2 · PDF + DOCX + LaTeX
-        </Badge>
+        <div className="flex items-center gap-2">
+          <AiProviderSwitch />
+          <Badge variant="outline" className="font-mono text-[10px]">
+            v0.2
+          </Badge>
+        </div>
       </header>
 
       <div className="mx-auto grid max-w-7xl gap-8 px-4 pb-12 pt-6 sm:px-6 sm:pt-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-start lg:gap-12 lg:pt-[6vh]">
@@ -612,7 +642,11 @@ export function ImportScreen({
                 "Factual safeguards",
                 "Evidence-grounded edits only",
               ],
-              [LockKeyhole, "TeX Live Engine", "Standardized ATS-ready PDF output"],
+              [
+                LockKeyhole,
+                "TeX Live Engine",
+                "Standardized ATS-ready PDF output",
+              ],
               [Sparkles, "Atomic Diffs", "Review and approve every change"],
             ].map(([Icon, title, copy]) => {
               const Glyph = Icon as typeof ShieldCheck;
@@ -748,7 +782,7 @@ export function ImportScreen({
               value={source}
               onChange={(event) => setSource(event.target.value)}
               placeholder="Paste your plain text resume or \documentclass{article} LaTeX here..."
-              className="min-h-32 resize-y bg-background font-mono text-xs leading-5"
+              className="h-40 [field-sizing:fixed] resize-none overflow-y-auto bg-background/60 font-mono text-xs leading-relaxed"
             />
 
             <div className="flex flex-col gap-2 sm:flex-row">

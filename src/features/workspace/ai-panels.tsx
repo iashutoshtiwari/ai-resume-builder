@@ -27,14 +27,39 @@ import type { TailoredResumeResponse } from "@/lib/ai/provider";
 import { useWorkspaceStore } from "@/store/workspace-store";
 
 async function postAI<T extends object>(path: string, body: unknown): Promise<T> {
-  const response = await fetch(path, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+  const provider = useWorkspaceStore.getState().activeAiProvider;
+  const response = await fetch(path, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-ai-provider": provider,
+    },
+    body: JSON.stringify(body),
+  });
   const result = await response.json() as T | { error?: { message?: string } };
   if (!response.ok) throw new Error("error" in result ? result.error?.message : "AI request failed.");
   return result as T;
 }
 
 function PanelHeading({ eyebrow, title, copy, action }: { eyebrow: string; title: string; copy: string; action?: React.ReactNode }) {
-  return <header className="flex items-start justify-between gap-4 border-b border-border px-5 py-5"><div><p className="font-mono text-[10px] uppercase tracking-[0.18em] text-primary">{eyebrow}</p><h2 className="mt-2 text-xl font-semibold tracking-tight">{title}</h2><p className="mt-1 text-sm text-muted-foreground">{copy}</p></div>{action}</header>;
+  const provider = useWorkspaceStore((state) => state.activeAiProvider);
+  const providerLabel = provider === "groq" ? "Groq LPU (Free)" : provider === "openrouter" ? "OpenRouter" : "Gemini Flash";
+
+  return (
+    <header className="flex items-start justify-between gap-4 border-b border-border px-5 py-5">
+      <div>
+        <div className="flex items-center gap-2">
+          <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-primary">{eyebrow}</p>
+          <span className="font-mono text-[9px] text-muted-foreground border border-border/80 px-1.5 py-0.5 rounded-none bg-muted/40">
+            via {providerLabel}
+          </span>
+        </div>
+        <h2 className="mt-2 text-xl font-semibold tracking-tight">{title}</h2>
+        <p className="mt-1 text-sm text-muted-foreground">{copy}</p>
+      </div>
+      {action}
+    </header>
+  );
 }
 
 export function JobPanel({ aiConfigured }: { aiConfigured: boolean }) {

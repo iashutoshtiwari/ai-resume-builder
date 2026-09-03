@@ -407,3 +407,95 @@ export function normalizeRawResume(raw: unknown): unknown {
     warnings,
   };
 }
+
+/**
+ * Normalizes a raw resume object and returns the unwrapped Resume document.
+ */
+export function extractNormalizedResume(raw: unknown): unknown {
+  const normalized = normalizeRawResume(raw);
+  if (normalized && typeof normalized === "object" && "resume" in normalized) {
+    return (normalized as { resume: unknown }).resume;
+  }
+  return normalized;
+}
+
+/**
+ * Normalizes raw tailoring response (e.g. from LLM that returned a raw array or wrapped object)
+ */
+export function normalizeRawTailoringResponse(raw: unknown): unknown {
+  if (Array.isArray(raw)) {
+    return { changes: raw, gaps: [] };
+  }
+  if (typeof raw !== "object" || raw === null) return raw;
+  const obj = raw as Record<string, unknown>;
+  const candidate = obj.data ?? obj.result ?? obj;
+  if (Array.isArray(candidate)) {
+    return { changes: candidate, gaps: [] };
+  }
+  if (typeof candidate === "object" && candidate !== null) {
+    const cObj = candidate as Record<string, unknown>;
+    const rawChanges = Array.isArray(cObj.changes)
+      ? cObj.changes
+      : Array.isArray(cObj.suggestions)
+      ? cObj.suggestions
+      : [];
+    const rawGaps = Array.isArray(cObj.gaps) ? cObj.gaps : [];
+    return {
+      changes: rawChanges,
+      gaps: rawGaps,
+    };
+  }
+  return raw;
+}
+
+/**
+ * Normalizes raw proofreading response (e.g. from LLM that returned a raw array or wrapped object)
+ */
+export function normalizeRawProofreadingResponse(raw: unknown): unknown {
+  if (Array.isArray(raw)) {
+    return { changes: raw };
+  }
+  if (typeof raw !== "object" || raw === null) return raw;
+  const obj = raw as Record<string, unknown>;
+  const candidate = obj.data ?? obj.result ?? obj;
+  if (Array.isArray(candidate)) {
+    return { changes: candidate };
+  }
+  if (typeof candidate === "object" && candidate !== null) {
+    const cObj = candidate as Record<string, unknown>;
+    const rawChanges = Array.isArray(cObj.changes)
+      ? cObj.changes
+      : Array.isArray(cObj.corrections)
+      ? cObj.corrections
+      : [];
+    return { changes: rawChanges };
+  }
+  return raw;
+}
+
+/**
+ * Normalizes full tailoring response, ensuring tailoredResume, summary, changes, and gaps
+ */
+export function normalizeRawFullTailoring(raw: unknown): unknown {
+  if (typeof raw !== "object" || raw === null) return raw;
+  const obj = raw as Record<string, unknown>;
+  const unwrapped = (typeof obj.data === "object" && obj.data !== null
+    ? obj.data
+    : typeof obj.result === "object" && obj.result !== null
+    ? obj.result
+    : obj) as Record<string, unknown>;
+
+  const resumeCandidate = unwrapped.tailoredResume ?? unwrapped.resume ?? unwrapped;
+  const tailoredResume = extractNormalizedResume(resumeCandidate);
+
+  return {
+    tailoredResume,
+    summary:
+      typeof unwrapped.summary === "string" && unwrapped.summary.trim()
+        ? unwrapped.summary.trim().slice(0, 2000)
+        : "Tailored resume to emphasize relevant candidate qualifications.",
+    changes: Array.isArray(unwrapped.changes) ? unwrapped.changes : [],
+    gaps: Array.isArray(unwrapped.gaps) ? unwrapped.gaps : [],
+  };
+}
+

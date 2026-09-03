@@ -18,8 +18,21 @@ import { ResumeSchema, type Resume } from "@/features/resume/schema";
 import { AppError } from "@/lib/ai/errors";
 import { validateResumeAgainstEvidence } from "@/lib/ai/factuality-validator";
 import { delay } from "@/lib/utils";
-import { extractAndParseJson, normalizeRawJobAnalysis, normalizeRawResume } from "@/lib/ai/normalize";
+import { compactGuidanceForPrompt } from "@/features/guidance/retrieve";
+import { cleanJobPostingText, normalizePromptText, toCompactJson } from "@/lib/ai/sanitize-input";
+import {
+  extractAndParseJson,
+  extractNormalizedResume,
+  normalizeRawFullTailoring,
+  normalizeRawJobAnalysis,
+  normalizeRawProofreadingResponse,
+  normalizeRawResume,
+  normalizeRawTailoringResponse,
+} from "@/lib/ai/normalize";
 import { callOpenRouter, configuredOpenRouterModel } from "@/lib/ai/openrouter-driver";
+import { callGroq, configuredGroqModel } from "@/lib/ai/groq-driver";
+
+
 import {
   analyzeJobPrompt,
   buildResumePrompt,
@@ -32,7 +45,7 @@ import {
 import type { BuildResumeResponse, ResumeAIProvider, TailoredResumeResponse } from "@/lib/ai/provider";
 import { assertUniqueResumeIds, assertValidJobComparison, filterValidProofreadingChanges } from "@/lib/ai/semantic-validation";
 
-export type AIProviderType = "google" | "openrouter";
+export type AIProviderType = "google" | "groq" | "openrouter";
 
 interface CommonProviderOptions {
   provider?: AIProviderType;
@@ -82,7 +95,7 @@ const GEMINI_SCHEMA_KEYS = new Set([
   "minItems", "maxItems", "minimum", "maximum", "anyOf", "oneOf", "properties", "additionalProperties", "required",
 ]);
 
-function geminiJsonSchema(schema: z.ZodType): unknown {
+export function standardJsonSchema(schema: z.ZodType): unknown {
   const sanitize = (value: unknown): unknown => {
     if (Array.isArray(value)) return value.map(sanitize);
     if (!value || typeof value !== "object") return value;
@@ -102,18 +115,29 @@ function geminiJsonSchema(schema: z.ZodType): unknown {
   return sanitize(z.toJSONSchema(schema));
 }
 
-export function resolveAiProvider(): AIProviderType {
-  const explicit = process.env.AI_PROVIDER?.trim().toLowerCase();
+function geminiJsonSchema(schema: z.ZodType): unknown {
+  return standardJsonSchema(schema);
+}
+
+
+export function resolveAiProvider(override?: string | null): AIProviderType {
+  const explicit = override?.trim().toLowerCase() || process.env.AI_PROVIDER?.trim().toLowerCase();
+  if (explicit === "groq") return "groq";
   if (explicit === "openrouter") return "openrouter";
   if (explicit === "google" || explicit === "gemini") return "google";
 
   // Auto-detection when AI_PROVIDER is unset:
+  const hasGroq = Boolean(process.env.GROQ_API_KEY?.trim());
   const hasGoogle = Boolean(
     process.env.GEMINI_API_KEY?.trim() ||
     process.env.GOOGLE_API_KEY?.trim() ||
     process.env.GOOGLE_GENERATIVE_AI_API_KEY?.trim(),
   );
   const hasOpenRouter = Boolean(process.env.OPENROUTER_API_KEY?.trim());
+
+  if (hasGroq && !hasGoogle && !hasOpenRouter) {
+    return "groq";
+  }
 
   if (hasOpenRouter && !hasGoogle) {
     return "openrouter";
@@ -131,7 +155,19 @@ export class CommonResumeAIProvider implements ResumeAIProvider {
   constructor(options?: CommonProviderOptions) {
     this.provider = options?.provider ?? resolveAiProvider();
 
-    if (this.provider === "openrouter") {
+    if (this.provider === "groq") {
+      this.apiKey = options?.apiKey ?? process.env.GROQ_API_KEY?.trim() ?? "";
+      this.model = options?.model ?? configuredGroqModel();
+
+      if (!this.apiKey) {
+        throw new AppError(
+          "AI_NOT_CONFIGURED",
+          "AI is unavailable until GROQ_API_KEY is configured in your environment.",
+          503,
+          false,
+        );
+      }
+    } else if (this.provider === "openrouter") {
       this.apiKey = options?.apiKey ?? process.env.OPENROUTER_API_KEY?.trim() ?? "";
       this.model = options?.model ?? configuredOpenRouterModel();
 
@@ -168,10 +204,18 @@ export class CommonResumeAIProvider implements ResumeAIProvider {
   private async generateRaw(
     prompt: [system: string, user: string],
     schema: z.ZodType,
+    maxOutputTokens = 3500,
   ): Promise<string> {
-    if (this.provider === "openrouter") {
-      return callOpenRouter(prompt, this.model, this.apiKey);
+    const jsonSchema = standardJsonSchema(schema);
+
+    if (this.provider === "groq") {
+      return callGroq(prompt, this.model, this.apiKey, maxOutputTokens, jsonSchema);
     }
+
+    if (this.provider === "openrouter") {
+      return callOpenRouter(prompt, this.model, this.apiKey, jsonSchema);
+    }
+
 
     // Google AI Studio / Gemini provider call
     let response: Awaited<ReturnType<GoogleGenAI["models"]["generateContent"]>> | undefined;
@@ -184,6 +228,7 @@ export class CommonResumeAIProvider implements ResumeAIProvider {
           config: {
             systemInstruction: prompt[0],
             temperature: 0.1,
+            maxOutputTokens,
             responseMimeType: "application/json",
             responseJsonSchema: geminiJsonSchema(schema),
             httpOptions: { timeout: 45_000 },
@@ -211,6 +256,7 @@ export class CommonResumeAIProvider implements ResumeAIProvider {
     prompt: [string, string],
     schema: z.ZodType<T>,
     preNormalizer?: (raw: unknown) => unknown,
+    maxOutputTokens = 3500,
   ): Promise<T> {
     const originalPrompt = prompt;
     let currentPrompt = prompt;
@@ -219,7 +265,7 @@ export class CommonResumeAIProvider implements ResumeAIProvider {
 
     for (let repairAttempt = 0; repairAttempt <= 2; repairAttempt += 1) {
       try {
-        lastOutput = await this.generateRaw(currentPrompt, schema);
+        lastOutput = await this.generateRaw(currentPrompt, schema, maxOutputTokens);
 
         const parsedJson = extractAndParseJson(lastOutput);
         const normalized = preNormalizer ? preNormalizer(parsedJson) : parsedJson;
@@ -268,10 +314,12 @@ export class CommonResumeAIProvider implements ResumeAIProvider {
   }
 
   async parseLatexResume(source: string): Promise<ImportResult> {
+    const cleaned = normalizePromptText(source);
     const parsed = await this.request(
-      parseResumePrompt(source),
+      parseResumePrompt(cleaned),
       ImportResponseSchema,
       normalizeRawResume,
+      3500,
     );
     assertUniqueResumeIds(parsed.resume);
     return { ...parsed, confidence: parsed.warnings.length > 0 ? "medium" : "high", importer: "ai" };
@@ -286,22 +334,25 @@ export class CommonResumeAIProvider implements ResumeAIProvider {
     sections: RenderedSection[],
     guidance: GuidanceContext,
   ): Promise<BuildResumeResponse> {
+    const compactGuidance = compactGuidanceForPrompt(guidance);
     const result = await this.request(
       buildResumePrompt(
-        JSON.stringify(profile),
-        JSON.stringify(sections),
-        JSON.stringify(guidance),
+        toCompactJson(profile),
+        toCompactJson(sections),
+        toCompactJson(compactGuidance),
       ),
       BuildResumeResponseSchema,
       (raw) => {
-        if (raw && typeof raw === "object" && "resume" in raw) {
+        if (raw && typeof raw === "object") {
+          const rObj = raw as Record<string, unknown>;
           return {
-            ...raw,
-            resume: normalizeRawResume((raw as { resume: unknown }).resume),
+            ...rObj,
+            resume: extractNormalizedResume(rObj.resume ?? raw),
           };
         }
         return raw;
       },
+      3500,
     );
     assertUniqueResumeIds(result.resume);
     const factuality = validateResumeAgainstEvidence(result.resume, profile);
@@ -312,10 +363,16 @@ export class CommonResumeAIProvider implements ResumeAIProvider {
   }
 
   async analyzeJob(resume: Resume, targetJob: TargetJob, guidance: GuidanceContext): Promise<JobAnalysisResponse> {
+    const cleanedJob: TargetJob = {
+      ...targetJob,
+      description: cleanJobPostingText(targetJob.description),
+    };
+    const compactGuidance = compactGuidanceForPrompt(guidance);
     const result = await this.request(
-      analyzeJobPrompt(JSON.stringify(resume), JSON.stringify(targetJob), JSON.stringify(guidance)),
+      analyzeJobPrompt(toCompactJson(resume), toCompactJson(cleanedJob), toCompactJson(compactGuidance)),
       JobAnalysisResponseSchema,
       normalizeRawJobAnalysis,
+      2000,
     );
     assertValidJobComparison(result, resume);
     return result;
@@ -328,24 +385,22 @@ export class CommonResumeAIProvider implements ResumeAIProvider {
     resumeRevision: string,
     guidance: GuidanceContext,
   ): Promise<TailoredResumeResponse> {
+    const cleanedJob: TargetJob = {
+      ...targetJob,
+      description: cleanJobPostingText(targetJob.description),
+    };
+    const compactGuidance = compactGuidanceForPrompt(guidance);
     const result = await this.request(
       fullTailorPrompt(
-        JSON.stringify(resume),
-        JSON.stringify(targetJob),
-        JSON.stringify(analysis),
+        toCompactJson(resume),
+        toCompactJson(cleanedJob),
+        toCompactJson(analysis),
         resumeRevision,
-        JSON.stringify(guidance),
+        toCompactJson(compactGuidance),
       ),
       FullTailoringResponseSchema,
-      (raw) => {
-        if (raw && typeof raw === "object" && "tailoredResume" in raw) {
-          return {
-            ...raw,
-            tailoredResume: normalizeRawResume((raw as { tailoredResume: unknown }).tailoredResume),
-          };
-        }
-        return raw;
-      },
+      normalizeRawFullTailoring,
+      3500,
     );
     assertUniqueResumeIds(result.tailoredResume);
     const validated = filterValidChanges(result.changes, resume, analysis.analysis, guidance);
@@ -374,9 +429,16 @@ export class CommonResumeAIProvider implements ResumeAIProvider {
     resumeRevision: string,
     guidance: GuidanceContext,
   ) {
+    const cleanedJob: TargetJob = {
+      ...targetJob,
+      description: cleanJobPostingText(targetJob.description),
+    };
+    const compactGuidance = compactGuidanceForPrompt(guidance);
     const result = await this.request(
-      tailorPrompt(JSON.stringify(resume), JSON.stringify(targetJob), JSON.stringify(analysis), resumeRevision, JSON.stringify(guidance)),
+      tailorPrompt(toCompactJson(resume), toCompactJson(cleanedJob), toCompactJson(analysis), resumeRevision, toCompactJson(compactGuidance)),
       TailoringResponseSchema,
+      normalizeRawTailoringResponse,
+      2500,
     );
     const validated = filterValidChanges(result.changes, resume, analysis.analysis, guidance);
     if (validated.rejected.length > 0) {
@@ -393,10 +455,15 @@ export class CommonResumeAIProvider implements ResumeAIProvider {
   }
 
   async proofreadResume(resume: Resume, resumeRevision: string, guidance: GuidanceContext) {
+    const compactGuidance = compactGuidanceForPrompt(guidance);
     const result = await this.request(
-      proofreadPrompt(JSON.stringify(resume), resumeRevision, JSON.stringify(guidance)),
+      proofreadPrompt(toCompactJson(resume), resumeRevision, toCompactJson(compactGuidance)),
       ProofreadingResponseSchema,
+      normalizeRawProofreadingResponse,
+      1500,
     );
+
+
     const validated = filterValidProofreadingChanges(result.changes, resume, guidance);
     if (validated.rejected.length > 0) {
       throw new AppError("SEMANTIC_VALIDATION_FAILED", "One or more proofreading changes failed factual validation or cited unknown guidance.", 422, false, validated.rejected);

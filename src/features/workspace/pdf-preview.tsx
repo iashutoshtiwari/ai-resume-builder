@@ -115,13 +115,13 @@ export function PdfPreview({ compact = false }: { compact?: boolean }) {
 
   return (
     <section
-      className={`flex h-full min-h-0 flex-col bg-[#d8dad7] text-zinc-950 ${compact ? "min-h-[680px]" : ""}`}
+      className={`flex h-full min-h-0 flex-col bg-zinc-950 text-foreground ${compact ? "min-h-[680px]" : ""}`}
     >
-      <div className="flex h-14 shrink-0 items-center justify-between border-b border-black/15 bg-[#eeeeeb] px-3">
+      <div className="flex h-14 shrink-0 items-center justify-between border-b border-border bg-card/60 px-3 text-foreground">
         <div className="flex items-center gap-2">
           <Button
             size="sm"
-            className="bg-zinc-950 text-white hover:bg-zinc-800"
+            variant="default"
             disabled={compileStatus === "compiling"}
             onClick={() => void compile()}
           >
@@ -129,7 +129,7 @@ export function PdfPreview({ compact = false }: { compact?: boolean }) {
             {pdfBlob ? "Recompile" : "Compile"}
           </Button>
 
-          {stale && <span className="font-mono text-[10px] text-amber-800">PREVIEW STALE</span>}
+          {stale && <span className="font-mono text-[10px] text-amber-400">PREVIEW STALE</span>}
         </div>
 
         {controls}
@@ -169,15 +169,16 @@ export function PdfPreview({ compact = false }: { compact?: boolean }) {
             }}
           />
         ) : (
-          <div className="mx-auto grid aspect-[8.5/11] w-full max-w-[610px] place-items-center border border-black/10 bg-white shadow-xl shadow-black/10">
+          <div className="mx-auto grid aspect-[8.5/11] w-full max-w-[610px] place-items-center border border-border bg-card/40 shadow-2xl shadow-black/40">
             <div className="max-w-xs text-center">
-              <FileWarning className="mx-auto size-6 text-zinc-400" />
-              <p className="mt-3 text-sm font-medium">No compiled preview yet</p>
-              <p className="mt-1 text-xs leading-5 text-zinc-500">
+              <FileWarning className="mx-auto size-6 text-muted-foreground" />
+              <p className="mt-3 text-sm font-medium text-foreground">No compiled preview yet</p>
+              <p className="mt-1 text-xs leading-5 text-muted-foreground">
                 Compile your resume into a clean, text-based PDF through the TeX Live service.
               </p>
               <Button
-                className="mt-5 bg-zinc-950 text-white hover:bg-zinc-800"
+                className="mt-5"
+                variant="default"
                 onClick={() => void compile()}
                 disabled={compileStatus === "compiling"}
               >
@@ -189,12 +190,12 @@ export function PdfPreview({ compact = false }: { compact?: boolean }) {
       </div>
 
       {(pages > 1 || compileError) && (
-        <div className="shrink-0 border-t border-black/15 bg-[#eeeeeb] px-3 py-2 space-y-2">
+        <div className="shrink-0 border-t border-border bg-card/60 px-3 py-2 space-y-2 text-foreground">
           {pages > 1 && (
             <div className="flex flex-col gap-1.5">
               <div className="flex items-center justify-center gap-2">
                 <Button
-                  size="icon"
+                  size="icon-sm"
                   variant="ghost"
                   disabled={page <= 1}
                   onClick={() => setPage((value) => value - 1)}
@@ -202,11 +203,11 @@ export function PdfPreview({ compact = false }: { compact?: boolean }) {
                 >
                   <ChevronLeft />
                 </Button>
-                <span className="font-mono text-[10px]">
+                <span className="font-mono text-[10px] text-muted-foreground">
                   {page} / {pages}
                 </span>
                 <Button
-                  size="icon"
+                  size="icon-sm"
                   variant="ghost"
                   disabled={page >= pages}
                   onClick={() => setPage((value) => value + 1)}
@@ -215,21 +216,21 @@ export function PdfPreview({ compact = false }: { compact?: boolean }) {
                   <ChevronRight />
                 </Button>
               </div>
-              <div className="rounded border border-amber-300/80 bg-amber-50 px-2.5 py-1.5 text-[11px] leading-4 text-amber-900">
-                <span className="font-semibold">Multi-page resume ({pages} pages):</span> The
-                Aim for one page when it keeps the document readable and preserves relevant evidence. A
+              <div className="rounded-none border border-amber-500/30 bg-amber-500/10 px-2.5 py-1.5 text-[11px] leading-4 text-amber-300">
+                <span className="font-semibold">Multi-page resume ({pages} pages):</span> Aim
+                for one page when it keeps the document readable and preserves relevant evidence. A
                 second page can be appropriate for substantial relevant experience or senior scope.
               </div>
             </div>
           )}
           {compileError && (
-            <details className="text-xs text-red-800">
+            <details className="text-xs text-red-400">
               <summary className="cursor-pointer font-medium">
                 Compile failed — last successful preview preserved
               </summary>
               <p className="mt-2">{compileError}</p>
               {compileLogs && (
-                <pre className="mt-2 max-h-28 overflow-auto whitespace-pre-wrap font-mono text-[10px]">
+                <pre className="mt-2 max-h-28 overflow-auto whitespace-pre-wrap font-mono text-[10px] border border-red-500/30 bg-red-950/20 p-2 text-red-300">
                   {compileLogs.slice(-5000)}
                 </pre>
               )}
@@ -242,7 +243,7 @@ export function PdfPreview({ compact = false }: { compact?: boolean }) {
 }
 
 function PreviewMessage({ label }: { label: string }) {
-  return <div className="grid h-[720px] w-[556px] place-items-center bg-white text-xs text-zinc-500">{label}</div>;
+  return <div className="grid h-[720px] w-[556px] place-items-center border border-border bg-card/40 text-xs text-muted-foreground">{label}</div>;
 }
 
 function BlobPdf({

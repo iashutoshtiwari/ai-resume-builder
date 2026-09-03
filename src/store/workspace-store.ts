@@ -17,6 +17,8 @@ import { createId, hashText } from "@/lib/utils";
 export type WorkspacePanel = "overview" | "experience" | "projects" | "skills" | "education" | "format" | "guidance" | "job" | "changes" | "latex";
 type SaveStatus = "idle" | "saving" | "saved" | "error" | "corrupt";
 
+export type ActiveAiProvider = "google" | "groq" | "openrouter";
+
 type WorkspaceStore = {
   workspace: Workspace | null;
   pdfBlob: Blob | null;
@@ -28,6 +30,8 @@ type WorkspaceStore = {
   compileStatus: "idle" | "compiling" | "success" | "error";
   compileLogs: string;
   compileError: string | null;
+  activeAiProvider: ActiveAiProvider;
+  setActiveAiProvider: (provider: ActiveAiProvider) => void;
   hydrate: () => Promise<void>;
   startWorkspace: (
     resume: Resume,
@@ -100,6 +104,7 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => ({
   compileStatus: "idle",
   compileLogs: "",
   compileError: null,
+  activeAiProvider: (typeof window !== "undefined" && (localStorage.getItem("active_ai_provider") as ActiveAiProvider)) || "google",
 
   hydrate: async () => {
     if (get().hydrated) return;
@@ -339,6 +344,16 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => ({
   setCompileSuccess: (pdfBlob, lastCompiledSourceHash, compileLogs) => set((state) => state.workspace ? { pdfBlob, compileStatus: "success", compileLogs, compileError: null, workspace: { ...state.workspace, lastCompiledSourceHash, lastCompiledPageCount: null, updatedAt: new Date().toISOString() }, saveStatus: "saving" } : state),
   setCompiledPageCount: (lastCompiledPageCount) => set((state) => state.workspace ? { workspace: { ...state.workspace, lastCompiledPageCount, updatedAt: new Date().toISOString() }, saveStatus: "saving" } : state),
   setCompileFailure: (compileError, compileLogs) => set({ compileStatus: "error", compileError, compileLogs }),
+  setActiveAiProvider: (provider) => {
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem("active_ai_provider", provider);
+      } catch {
+        // Ignored
+      }
+    }
+    set({ activeAiProvider: provider });
+  },
   resetWorkspace: async () => {
     await clearWorkspace();
     set({ workspace: null, pdfBlob: null, past: [], future: [], saveStatus: "idle", compileStatus: "idle", compileLogs: "", compileError: null });

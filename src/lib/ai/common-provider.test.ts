@@ -63,10 +63,35 @@ describe("AI Provider Resolution and Configuration", () => {
     expect(resolveAiProvider()).toBe("openrouter");
   });
 
+  it("resolves groq when AI_PROVIDER=groq (case-insensitive)", () => {
+    vi.stubEnv("AI_PROVIDER", "groq");
+    expect(resolveAiProvider()).toBe("groq");
+
+    vi.stubEnv("AI_PROVIDER", "Groq");
+    expect(resolveAiProvider()).toBe("groq");
+  });
+
+  it("resolves provider based on runtime override parameter", () => {
+    vi.stubEnv("AI_PROVIDER", "google");
+    expect(resolveAiProvider("groq")).toBe("groq");
+    expect(resolveAiProvider("openrouter")).toBe("openrouter");
+    expect(resolveAiProvider("google")).toBe("google");
+  });
+
+  it("auto-detects groq when only GROQ_API_KEY is present", () => {
+    vi.stubEnv("AI_PROVIDER", "");
+    vi.stubEnv("GEMINI_API_KEY", "");
+    vi.stubEnv("GOOGLE_API_KEY", "");
+    vi.stubEnv("OPENROUTER_API_KEY", "");
+    vi.stubEnv("GROQ_API_KEY", "gsk-test-key");
+    expect(resolveAiProvider()).toBe("groq");
+  });
+
   it("auto-detects openrouter when only OPENROUTER_API_KEY is present", () => {
     vi.stubEnv("AI_PROVIDER", "");
     vi.stubEnv("GEMINI_API_KEY", "");
     vi.stubEnv("GOOGLE_API_KEY", "");
+    vi.stubEnv("GROQ_API_KEY", "");
     vi.stubEnv("OPENROUTER_API_KEY", "sk-or-test-key");
     expect(resolveAiProvider()).toBe("openrouter");
   });
@@ -85,13 +110,21 @@ describe("AI Provider Resolution and Configuration", () => {
     expect(resolveAiProvider()).toBe("google");
   });
 
-  it("evaluates isAiConfigured accurately for both providers", () => {
+  it("evaluates isAiConfigured accurately for all providers", () => {
     // Google mode
     vi.stubEnv("AI_PROVIDER", "google");
     vi.stubEnv("GEMINI_API_KEY", "");
     expect(isAiConfigured()).toBe(false);
 
     vi.stubEnv("GEMINI_API_KEY", "gemini-key");
+    expect(isAiConfigured()).toBe(true);
+
+    // Groq mode
+    vi.stubEnv("AI_PROVIDER", "groq");
+    vi.stubEnv("GROQ_API_KEY", "");
+    expect(isAiConfigured()).toBe(false);
+
+    vi.stubEnv("GROQ_API_KEY", "gsk-key");
     expect(isAiConfigured()).toBe(true);
 
     // OpenRouter mode

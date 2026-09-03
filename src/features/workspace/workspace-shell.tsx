@@ -43,12 +43,13 @@ import { GuidancePanel } from "@/features/guidance/guidance-panel";
 import { LatexPanel } from "@/features/workspace/latex-panel";
 import { FormatPanel } from "@/features/presentation/format-panel";
 import { EducationPanel, ExperiencePanel, OverviewPanel, ProjectsPanel, SkillsPanel } from "@/features/workspace/resume-panels";
+import { AiProviderSwitch } from "@/features/workspace/ai-provider-switch";
 import { useWorkspaceStore, type WorkspacePanel } from "@/store/workspace-store";
 
 const PdfPreview = dynamic(() => import("@/features/workspace/pdf-preview").then((module) => module.PdfPreview), {
   ssr: false,
   loading: () => (
-    <div className="grid h-full min-h-[500px] place-items-center bg-[#d8dad7] text-xs text-zinc-500">
+    <div className="grid h-full min-h-[500px] place-items-center bg-zinc-950 text-xs text-muted-foreground">
       Loading document preview…
     </div>
   ),
@@ -94,16 +95,41 @@ function Navigation({ collapsed, onToggle }: { collapsed: boolean; onToggle: () 
 
   return (
     <aside className="flex h-full min-h-0 flex-col border-r border-border bg-card/45">
-      <div className="flex h-14 shrink-0 items-center justify-between border-b border-border px-3">
-        <Link href="/" className="flex min-w-0 items-center gap-2">
-          <div className="grid size-7 shrink-0 place-items-center border border-primary/40 bg-primary/10">
-            <FilePenLine className="size-3.5 text-primary" />
-          </div>
-          {!collapsed && <span className="truncate text-xs font-semibold">Resume Builder</span>}
-        </Link>
-        <Button size="icon" variant="ghost" onClick={onToggle} aria-label={collapsed ? "Expand navigation" : "Collapse navigation"}>
-          {collapsed ? <ChevronRight className="size-4" /> : <ChevronLeft className="size-4" />}
-        </Button>
+      <div className={`flex h-14 shrink-0 items-center border-b border-border ${collapsed ? "justify-center px-2" : "justify-between px-3"}`}>
+        {collapsed ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                size="icon-sm"
+                variant="ghost"
+                className="size-8"
+                onClick={onToggle}
+                aria-label="Expand navigation"
+              >
+                <ChevronRight className="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="right">Expand navigation</TooltipContent>
+          </Tooltip>
+        ) : (
+          <>
+            <Link href="/" className="flex min-w-0 items-center gap-2">
+              <div className="grid size-7 shrink-0 place-items-center border border-primary/40 bg-primary/10">
+                <FilePenLine className="size-3.5 text-primary" />
+              </div>
+              <span className="truncate text-xs font-semibold">Resume Builder</span>
+            </Link>
+            <Button
+              size="icon-sm"
+              variant="ghost"
+              className="size-7"
+              onClick={onToggle}
+              aria-label="Collapse navigation"
+            >
+              <ChevronLeft className="size-3.5" />
+            </Button>
+          </>
+        )}
       </div>
 
       <nav aria-label="Workspace sections" className="min-h-0 flex-1 overflow-y-auto px-2 py-3">
@@ -147,8 +173,23 @@ function Navigation({ collapsed, onToggle }: { collapsed: boolean; onToggle: () 
         })}
       </nav>
 
-      <div className="border-t border-border p-3">
-        {!collapsed && <p className="text-[10px] leading-4 text-muted-foreground">Local workspace · IndexedDB</p>}
+      <div className="border-t border-border p-3 flex items-center justify-center">
+        {collapsed ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Link
+                href="/"
+                className="grid size-7 place-items-center border border-primary/40 bg-primary/10 text-primary transition-colors hover:bg-primary/20"
+                aria-label="Home"
+              >
+                <FilePenLine className="size-3.5" />
+              </Link>
+            </TooltipTrigger>
+            <TooltipContent side="right">Home</TooltipContent>
+          </Tooltip>
+        ) : (
+          <p className="w-full text-[10px] leading-4 text-muted-foreground">Local workspace · IndexedDB</p>
+        )}
       </div>
     </aside>
   );
@@ -247,9 +288,6 @@ export function WorkspaceShell({ aiConfigured }: { aiConfigured: boolean }) {
             ← Home
           </Link>
           <span className="truncate text-xs font-semibold sm:font-medium">{workspace.name}</span>
-          <span className="hidden font-mono text-[9px] text-muted-foreground md:inline">
-            REV {workspace.resumeRevision.slice(-8).toUpperCase()}
-          </span>
         </div>
 
         <div className="flex items-center gap-1 sm:gap-2">
@@ -322,6 +360,8 @@ export function WorkspaceShell({ aiConfigured }: { aiConfigured: boolean }) {
             </TooltipTrigger>
             <TooltipContent>Dedicated TeX Live compilation microservice</TooltipContent>
           </Tooltip>
+
+          <AiProviderSwitch />
 
           {!aiConfigured && (
             <Badge variant="outline" className="hidden text-warning sm:flex text-[9px]">
