@@ -2,24 +2,80 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, DM_Sans } from "next/font/google";
 import { Toaster } from "sonner";
 import { AppProviders } from "@/components/app-providers";
+import { JsonLd } from "@/features/seo/json-ld";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 
-const geistHeading = Geist({subsets:['latin'],variable:'--font-heading'});
-
-const dmSans = DM_Sans({subsets:['latin'],variable:'--font-sans'});
-
+const geistHeading = Geist({ subsets: ["latin"], variable: "--font-heading" });
+const dmSans = DM_Sans({ subsets: ["latin"], variable: "--font-sans" });
 const geist = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
+const baseUrl =
+  process.env.NEXT_PUBLIC_APP_URL ||
+  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
+
 export const metadata: Metadata = {
-  title: "AI Resume Builder",
-  description: "Evidence-grounded resume tailoring with local LaTeX compilation.",
+  metadataBase: new URL(baseUrl),
+  title: {
+    default: "AI Resume Builder — Evidence-Grounded LaTeX Resume Tailoring",
+    template: "%s | AI Resume Builder",
+  },
+  description:
+    "Evidence-grounded resume tailoring with ATS-ready LaTeX generation. Import PDF or DOCX, match against job postings, review atomic diffs, and compile locally via WebAssembly.",
+  applicationName: "AI Resume Builder",
+  authors: [{ name: "AI Resume Builder Team" }],
+  creator: "AI Resume Builder",
+  publisher: "AI Resume Builder",
+  keywords: [
+    "AI resume builder",
+    "LaTeX resume",
+    "ATS friendly resume",
+    "evidence grounded resume tailoring",
+    "browser LaTeX compiler",
+    "Siglum WebAssembly",
+    "local resume builder",
+    "open source resume builder",
+    "ATS resume optimizer",
+  ],
+  category: "Productivity",
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: "/",
+    siteName: "AI Resume Builder",
+    title: "AI Resume Builder — Evidence-Grounded LaTeX Resume Tailoring",
+    description:
+      "Evidence-grounded resume tailoring and ATS-ready LaTeX generation. Match job descriptions with zero hallucinations and local in-browser compilation.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "AI Resume Builder — Evidence-Grounded LaTeX Resume Tailoring",
+    description:
+      "Evidence-grounded resume tailoring and ATS-ready LaTeX generation. Match job descriptions with zero hallucinations and local in-browser compilation.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" className={cn("dark", geist.variable, geistMono.variable, "font-sans", dmSans.variable, geistHeading.variable)}>
+      <head>
+        <JsonLd />
+      </head>
       {/*
         THESIS: A resume review desk, not an AI dashboard; evidence and document output share the viewport.
         OWN-WORLD: Near-black zinc surfaces, hairline dividers, paper-white preview, restrained green state signals.

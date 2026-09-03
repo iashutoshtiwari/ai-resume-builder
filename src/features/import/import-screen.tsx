@@ -9,6 +9,7 @@ import {
   extractTextFromFile,
   type SupportedFormat,
 } from "@/lib/document/extract";
+import { LandingContent } from "@/features/seo/landing-content";
 import { useWorkspaceStore } from "@/store/workspace-store";
 import {
   ArrowRight,
@@ -505,6 +506,8 @@ export function ImportScreen({
           </div>
         </section>
       </div>
+
+      <LandingContent />
     </main>
   );
 }

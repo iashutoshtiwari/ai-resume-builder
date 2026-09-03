@@ -1,0 +1,70 @@
+# AI Resume Builder — Full Technical Specification
+
+## Overview
+
+AI Resume Builder is a privacy-first, evidence-grounded resume tailoring application built on Next.js 16, TypeScript, React 19, Tailwind CSS 4, and WebAssembly.
+
+Traditional AI resume tools generate text in a black box, frequently inventing quantifiable accomplishments, falsifying skills, or outputting brittle multi-column documents that fail Applicant Tracking System (ATS) parsers. AI Resume Builder solves this through three core principles:
+1. **Schema as Source of Truth**: The resume data model is strictly validated via Zod (`ResumeSchema`). Output LaTeX code is generated deterministically from this schema.
+2. **Factuality & Evidence Grounding**: AI tailoring operates under strict constraints. Every bullet revision or addition must point directly to explicit evidence in the candidate's existing background. Revisions that invent ungrounded metrics or skills are rejected at the validator layer.
+3. **Local In-Browser Compilation**: Using the Siglum WebAssembly engine and TeX Live bundles, LaTeX documents compile to PDF directly inside the user's web browser, keeping personal data off remote compile servers.
+
+---
+
+## Architecture & Workflows
+
+### 1. Ingestion Pipeline
+- Supports `.pdf`, `.docx`, `.tex`, and plain `.txt`.
+- PDF text is extracted client-side via `pdfjs-dist`.
+- DOCX text is extracted client-side via `mammoth`.
+- When an AI provider (Google Gemini or OpenRouter) is configured, `/api/ai/parse-resume` parses raw text into `ResumeSchema` JSON. For canonical LaTeX fixtures, deterministic parsing runs locally without AI.
+
+### 2. Job Analysis & Tailoring
+- When a candidate provides a job description, `/api/ai/analyze-job` extracts structured requirements: role title, company, required skills, preferred qualifications, and key responsibilities.
+- `/api/ai/tailor` analyzes candidate experience against the job requirements and generates atomic changes (`AddBulletProposal`, `ModifyBulletProposal`, `ReorderSkillsProposal`).
+- Each proposal includes:
+  - `target`: Exact JSON path in the resume.
+  - `sourceText`: The exact existing text before the edit.
+  - `proposedText`: The tailored text.
+  - `evidence`: Direct excerpt from candidate source text proving factual accuracy.
+  - `requirementId`: The specific job requirement addressed.
+  - `rationale`: Why this adjustment improves alignment without exaggerating.
+
+### 3. Verification & Safeguards
+- `validateProposedChanges` runs before any change is presented to the candidate.
+- Checks for:
+  - Valid target paths.
+  - Exact match of source text.
+  - Verifiable evidence in candidate source document.
+  - Absence of hallucinated metrics or unreferenced technologies.
+  - Prevention of unauthorized claims for unproven gaps.
+
+### 4. Deterministic LaTeX Generation & WebAssembly Compilation
+- Resume data is converted into clean LaTeX markup via `renderResumeToLatex`.
+- Escapes all special characters (`&`, `%`, `$`, `#`, `_`, `{`, `}`, `~`, `^`, `\`).
+- Output uses standard LaTeX single-column semantic markup optimized for optical character recognition (OCR) and ATS parsers.
+- Compilation runs in a Web Worker using WebAssembly (Siglum engine with TeX Live 2025 bundles), requiring cross-origin isolation (`Cross-Origin-Opener-Policy: same-origin`, `Cross-Origin-Embedder-Policy: require-corp`).
+
+### 5. Storage & Privacy
+- Resumes and compiled PDFs persist solely in browser `IndexedDB` (`idb`).
+- No user accounts, passwords, analytics trackers, or server-side databases.
+- AI requests transmit only the resume text and target job description necessary for processing and do not retain candidate records.
+
+---
+
+## API Routes Reference
+
+All API routes require server-side execution and validate payloads using Zod schemas:
+- `POST /api/ai/parse-resume`: Ingests raw text and returns structured `ResumeSchema`.
+- `POST /api/ai/analyze-job`: Ingests job description and returns structured `JobDescriptionSchema`.
+- `POST /api/ai/tailor`: Compares candidate resume and job requirements, outputting validated atomic proposals.
+- `POST /api/ai/proofread`: Analyzes grammar, tone, action verbs, and conciseness.
+- `POST /api/compile`: Fallback or server-side TeX compilation when local browser compilation is not active.
+
+---
+
+## Supported Formats & System Requirements
+
+- **Input Formats**: PDF (text-based), Microsoft Word (.docx), LaTeX (.tex), Plain Text (.txt, Markdown).
+- **Output Formats**: ATS-compliant PDF, Source LaTeX (.tex), Structured JSON.
+- **Browser Requirements**: Modern Chromium, Firefox, or Safari with WebAssembly and Web Worker support.

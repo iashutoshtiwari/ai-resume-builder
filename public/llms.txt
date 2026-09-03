@@ -1,0 +1,19 @@
+# AI Resume Builder
+
+> Evidence-grounded resume tailoring workspace with local WebAssembly LaTeX compilation.
+
+AI Resume Builder converts unstructured resumes (PDF, Word DOCX, LaTeX, plain text) into structured JSON resumes, evaluates them against target job descriptions, generates atomic evidence-grounded proposals with zero hallucinations, and deterministically renders and compiles clean, ATS-compliant LaTeX PDFs directly in the browser via WebAssembly (Siglum TeX Live engine).
+
+## Core Capabilities
+
+- **Multi-Format Extraction**: Extracts text and structure from PDF (`pdfjs-dist`), Word DOCX (`mammoth`), LaTeX (.tex), and plain text.
+- **Evidence-Grounded AI Tailoring**: Tailoring suggestions link directly to verbatim evidence in the user's uploaded background. Suggestions never invent metrics, falsify timelines, or hallucinate technologies.
+- **Deterministic LaTeX Rendering**: ResumeSchema is the single source of truth. LaTeX code is deterministically generated without visual drift, overlapping columns, or broken parser glyphs.
+- **In-Browser WebAssembly Compilation**: Runs pdfLaTeX in a Web Worker using Siglum and TeX Live 2025 bundles with cross-origin isolation. Resumes are compiled on the client, not uploaded to remote compiler servers.
+- **Local Privacy**: Resumes, contact details, and compiled documents are persisted in browser IndexedDB. No backend database stores candidate personal information.
+- **Atomic Review Diffs**: Every change (role, summary, bullet point, skill) is isolated into an atomic diff requiring explicit user acceptance or rejection.
+
+## Documentation & References
+
+- [Full LLM Specification](/llms-full.txt): Comprehensive architectural, schema, and API reference for AI models and answer engines.
+- [GitHub Repository](https://github.com/iashutoshtiwari/ai-resume-builder): Source code, tests, and deployment guides.
