@@ -4,28 +4,32 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import {
-  BookOpen,
-  BriefcaseBusiness,
-  ChevronLeft,
-  ChevronRight,
-  Code2,
-  Columns2,
-  FileCheck2,
-  GraduationCap,
-  History,
-  LayoutDashboard,
-  Menu,
-  PanelLeft,
-  PanelRight,
-  Redo2,
-  Save,
-  ShieldCheck,
-  SlidersHorizontal,
-  Sparkles,
-  Undo2,
-  Wrench,
-  FileText,
-} from "lucide-react";
+  IconArrowBackUp,
+  IconArrowForwardUp,
+  IconArrowLeft,
+  IconAward,
+  IconBook,
+  IconBriefcase,
+  IconChevronLeft,
+  IconChevronRight,
+  IconCode,
+  IconColumns,
+  IconDeviceFloppy,
+  IconFileCheck,
+  IconFileText,
+  IconHistory,
+  IconLayoutDashboard,
+  IconLayoutSidebar,
+  IconLayoutSidebarRight,
+  IconMenu2,
+  IconSchool,
+  IconShieldCheck,
+  IconAdjustmentsHorizontal,
+  IconSparkles,
+  IconTool,
+  IconTrophy,
+  type Icon as TablerIcon,
+} from "@tabler/icons-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -41,7 +45,15 @@ import { ChangesPanel, JobPanel } from "@/features/workspace/ai-panels";
 import { GuidancePanel } from "@/features/guidance/guidance-panel";
 import { LatexPanel } from "@/features/workspace/latex-panel";
 import { FormatPanel } from "@/features/presentation/format-panel";
-import { EducationPanel, ExperiencePanel, OverviewPanel, ProjectsPanel, SkillsPanel } from "@/features/workspace/resume-panels";
+import {
+  AchievementsPanel,
+  CertificationsPanel,
+  EducationPanel,
+  ExperiencePanel,
+  OverviewPanel,
+  ProjectsPanel,
+  SkillsPanel,
+} from "@/features/workspace/resume-panels";
 import { AiProviderSwitch } from "@/features/workspace/ai-provider-switch";
 import { useWorkspaceStore, type WorkspacePanel } from "@/store/workspace-store";
 
@@ -54,17 +66,19 @@ const PdfPreview = dynamic(() => import("@/features/workspace/pdf-preview").then
   ),
 });
 
-const nav: Array<{ id: WorkspacePanel; label: string; icon: typeof LayoutDashboard; group: string }> = [
-  { id: "overview", label: "Overview", icon: LayoutDashboard, group: "Resume" },
-  { id: "experience", label: "Experience", icon: BriefcaseBusiness, group: "Resume" },
-  { id: "projects", label: "Projects", icon: Wrench, group: "Resume" },
-  { id: "skills", label: "Skills", icon: BookOpen, group: "Resume" },
-  { id: "education", label: "Education", icon: GraduationCap, group: "Resume" },
-  { id: "format", label: "Format", icon: SlidersHorizontal, group: "Resume" },
-  { id: "guidance", label: "Guidance", icon: ShieldCheck, group: "Resume" },
-  { id: "job", label: "Target Job", icon: Sparkles, group: "AI Tailoring" },
-  { id: "changes", label: "Diffs & Changes", icon: FileCheck2, group: "AI Tailoring" },
-  { id: "latex", label: "LaTeX Source", icon: Code2, group: "Source" },
+const nav: Array<{ id: WorkspacePanel; label: string; icon: TablerIcon; group: string }> = [
+  { id: "overview", label: "Overview", icon: IconLayoutDashboard, group: "Resume" },
+  { id: "experience", label: "Experience", icon: IconBriefcase, group: "Resume" },
+  { id: "projects", label: "Projects", icon: IconTool, group: "Resume" },
+  { id: "skills", label: "Skills", icon: IconBook, group: "Resume" },
+  { id: "education", label: "Education", icon: IconSchool, group: "Resume" },
+  { id: "certifications", label: "Certifications", icon: IconAward, group: "Resume" },
+  { id: "achievements", label: "Achievements", icon: IconTrophy, group: "Resume" },
+  { id: "format", label: "Format", icon: IconAdjustmentsHorizontal, group: "Resume" },
+  { id: "guidance", label: "Guidance", icon: IconShieldCheck, group: "Resume" },
+  { id: "job", label: "Target Job", icon: IconSparkles, group: "AI Tailoring" },
+  { id: "changes", label: "Diffs & Changes", icon: IconFileCheck, group: "AI Tailoring" },
+  { id: "latex", label: "LaTeX Source", icon: IconCode, group: "Source" },
 ];
 
 function CurrentPanel({ aiConfigured }: { aiConfigured: boolean }) {
@@ -74,6 +88,8 @@ function CurrentPanel({ aiConfigured }: { aiConfigured: boolean }) {
   if (panel === "projects") return <ProjectsPanel />;
   if (panel === "skills") return <SkillsPanel />;
   if (panel === "education") return <EducationPanel />;
+  if (panel === "certifications") return <CertificationsPanel />;
+  if (panel === "achievements") return <AchievementsPanel />;
   if (panel === "format") return <FormatPanel />;
   if (panel === "guidance") return <GuidancePanel />;
   if (panel === "job") return <JobPanel aiConfigured={aiConfigured} />;
@@ -105,7 +121,7 @@ function Navigation({ collapsed, onToggle }: { collapsed: boolean; onToggle: () 
                 onClick={onToggle}
                 aria-label="Expand navigation"
               >
-                <ChevronRight className="size-4" />
+                <IconChevronRight className="size-4" />
               </Button>
             </TooltipTrigger>
             <TooltipContent side="right">Expand navigation</TooltipContent>
@@ -125,7 +141,7 @@ function Navigation({ collapsed, onToggle }: { collapsed: boolean; onToggle: () 
               onClick={onToggle}
               aria-label="Collapse navigation"
             >
-              <ChevronLeft className="size-3.5" />
+              <IconChevronLeft className="size-3.5" />
             </Button>
           </>
         )}
@@ -196,7 +212,12 @@ function Navigation({ collapsed, onToggle }: { collapsed: boolean; onToggle: () 
 
 export function WorkspaceShell({ aiConfigured }: { aiConfigured: boolean }) {
   const { hydrate, hydrated, workspace, saveStatus, past, future, undo, redo, panel, setPanel } = useWorkspaceStore();
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(() => {
+    if (typeof window !== "undefined" && window.innerWidth >= 1024 && window.innerWidth < 1280) {
+      return true;
+    }
+    return false;
+  });
   const [desktopView, setDesktopView] = useState<"split" | "editor" | "preview">("split");
   const [mobileTabOverride, setMobileTabOverride] = useState<"editor" | "ai" | "preview" | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -213,7 +234,7 @@ export function WorkspaceShell({ aiConfigured }: { aiConfigured: boolean }) {
     return (
       <main className="grid min-h-screen place-items-center">
         <div className="text-center">
-          <History className="mx-auto size-5 animate-pulse text-primary" />
+          <IconHistory className="mx-auto size-5 animate-pulse text-primary" />
           <p className="mt-3 text-sm text-muted-foreground">Restoring local workspace…</p>
         </div>
       </main>
@@ -224,7 +245,7 @@ export function WorkspaceShell({ aiConfigured }: { aiConfigured: boolean }) {
     return (
       <main className="grid min-h-screen place-items-center px-5">
         <div className="max-w-sm text-center">
-          <Menu className="mx-auto size-5 text-muted-foreground" />
+          <IconMenu2 className="mx-auto size-5 text-muted-foreground" />
           <h1 className="mt-4 text-xl font-semibold">No workspace found</h1>
           <p className="mt-2 text-sm text-muted-foreground">Upload a resume PDF, Word doc, or open the sample workspace.</p>
           <Button asChild className="mt-5">
@@ -243,18 +264,25 @@ export function WorkspaceShell({ aiConfigured }: { aiConfigured: boolean }) {
       <header className="flex h-12 shrink-0 items-center justify-between border-b border-border bg-background px-3">
         <div className="flex min-w-0 items-center gap-2 sm:gap-3">
           {/* Mobile Drawer Trigger */}
-          <div className="min-[1200px]:hidden">
+          <div className="lg:hidden">
             <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
               <SheetTrigger asChild>
-                <Button size="icon-sm" variant="ghost" className="size-8" aria-label="Open menu">
-                  <Menu className="size-4" />
+                <Button size="icon-sm" variant="ghost" className="size-8 touch-manipulation" aria-label="Open menu">
+                  <IconMenu2 className="size-4" />
                 </Button>
               </SheetTrigger>
               <SheetContent side="left" className="w-72 p-0">
-                <SheetHeader className="border-b border-border p-4">
+                <SheetHeader className="border-b border-border px-4 py-3 min-h-12 flex flex-col justify-center">
                   <SheetTitle className="text-xs font-semibold">Resume Navigation</SheetTitle>
                 </SheetHeader>
                 <div className="overflow-y-auto p-3">
+                  <Link
+                    href="/"
+                    className="mb-2 flex h-10 w-full items-center gap-2.5 rounded-none border-b border-border px-3 text-left text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground touch-manipulation transition-colors"
+                  >
+                    <IconArrowLeft className="size-4 shrink-0" />
+                    <span>Back to Home</span>
+                  </Link>
                   {nav.map((item) => {
                     const Icon = item.icon;
                     return (
@@ -266,7 +294,7 @@ export function WorkspaceShell({ aiConfigured }: { aiConfigured: boolean }) {
                           setPanel(item.id);
                           setDrawerOpen(false);
                         }}
-                        className={`mb-1 flex h-9 w-full items-center gap-2.5 rounded-none px-3 text-left text-xs transition-colors ${
+                        className={`mb-1 flex h-10 w-full items-center gap-2.5 rounded-none px-3 text-left text-xs touch-manipulation transition-colors ${
                           panel === item.id
                             ? "bg-primary/10 font-medium text-foreground"
                             : "text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -283,27 +311,32 @@ export function WorkspaceShell({ aiConfigured }: { aiConfigured: boolean }) {
             </Sheet>
           </div>
 
-          <Link href="/" className="hidden font-medium text-xs text-muted-foreground hover:text-foreground sm:inline">
-            ← Home
+          <Link
+            href="/"
+            aria-label="Back to home"
+            className="inline-flex items-center gap-1 font-medium text-xs text-muted-foreground hover:text-foreground shrink-0 touch-manipulation"
+          >
+            <IconArrowLeft className="size-3.5" />
+            <span>Home</span>
           </Link>
           <span className="truncate text-xs font-semibold sm:font-medium">{workspace.name}</span>
         </div>
 
         <div className="flex items-center gap-1 sm:gap-2">
           <span className="mr-1 hidden items-center gap-1.5 text-[10px] text-muted-foreground sm:flex">
-            <Save className="size-3" />
+            <IconDeviceFloppy className="size-3" />
             {saveStatus === "saving" ? "Saving…" : saveStatus === "error" ? "Save error" : "Saved"}
           </span>
 
-          <Button size="icon-sm" variant="ghost" className="size-8" disabled={past.length === 0} onClick={undo} aria-label="Undo">
-            <Undo2 className="size-3.5" />
+          <Button size="icon-sm" variant="ghost" className="size-8 touch-manipulation" disabled={past.length === 0} onClick={undo} aria-label="Undo">
+            <IconArrowBackUp className="size-3.5" />
           </Button>
-          <Button size="icon-sm" variant="ghost" className="size-8" disabled={future.length === 0} onClick={redo} aria-label="Redo">
-            <Redo2 className="size-3.5" />
+          <Button size="icon-sm" variant="ghost" className="size-8 touch-manipulation" disabled={future.length === 0} onClick={redo} aria-label="Redo">
+            <IconArrowForwardUp className="size-3.5" />
           </Button>
 
           {/* Desktop View Mode Toggles */}
-          <div className="hidden min-[1200px]:flex items-center gap-1 border-l border-border pl-2">
+          <div className="hidden lg:flex items-center gap-1 border-l border-border pl-2">
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -313,7 +346,7 @@ export function WorkspaceShell({ aiConfigured }: { aiConfigured: boolean }) {
                   onClick={() => setDesktopView("split")}
                   aria-label="Split view (Editor + PDF Preview)"
                 >
-                  <Columns2 className="size-3.5" />
+                  <IconColumns className="size-3.5" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>Split View (Editor + PDF)</TooltipContent>
@@ -328,7 +361,7 @@ export function WorkspaceShell({ aiConfigured }: { aiConfigured: boolean }) {
                   onClick={() => setDesktopView("editor")}
                   aria-label="Focus Editor (Full Width)"
                 >
-                  <PanelRight className="size-3.5" />
+                  <IconLayoutSidebarRight className="size-3.5" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>Focus Editor (Full Width)</TooltipContent>
@@ -343,7 +376,7 @@ export function WorkspaceShell({ aiConfigured }: { aiConfigured: boolean }) {
                   onClick={() => setDesktopView("preview")}
                   aria-label="Focus PDF Preview"
                 >
-                  <PanelLeft className="size-3.5" />
+                  <IconLayoutSidebar className="size-3.5" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>Focus PDF Preview</TooltipContent>
@@ -372,14 +405,14 @@ export function WorkspaceShell({ aiConfigured }: { aiConfigured: boolean }) {
 
       {/* Desktop 3-Column / View-Mode Layout */}
       <div
-        className="hidden min-h-0 flex-1 min-[1200px]:grid"
+        className="hidden min-h-0 flex-1 lg:grid"
         style={{
           gridTemplateColumns:
             desktopView === "editor"
               ? `${collapsed ? "52px" : "210px"} 1fr`
               : desktopView === "preview"
               ? `${collapsed ? "52px" : "210px"} 1fr`
-              : `${collapsed ? "52px" : "210px"} minmax(480px, 1.05fr) minmax(420px, 0.95fr)`,
+              : `${collapsed ? "52px" : "210px"} minmax(380px, 1.05fr) minmax(360px, 0.95fr)`,
         }}
       >
         <Navigation collapsed={collapsed} onToggle={() => setCollapsed((v) => !v)} />
@@ -390,7 +423,9 @@ export function WorkspaceShell({ aiConfigured }: { aiConfigured: boolean }) {
               panel === "latex" ? "overflow-hidden" : "overflow-y-auto"
             }`}
           >
-            <CurrentPanel aiConfigured={aiConfigured} />
+            <div className={panel === "latex" ? "h-full w-full" : "mx-auto w-full max-w-4xl min-h-full"}>
+              <CurrentPanel aiConfigured={aiConfigured} />
+            </div>
           </div>
         )}
 
@@ -398,7 +433,7 @@ export function WorkspaceShell({ aiConfigured }: { aiConfigured: boolean }) {
       </div>
 
       {/* Mobile / Tablet Responsive Layout */}
-      <div className="flex min-h-0 flex-1 flex-col min-[1200px]:hidden">
+      <div className="flex min-h-0 flex-1 flex-col lg:hidden">
         {/* Main View Tabs */}
         <Tabs
           value={activeMobileTab}
@@ -416,10 +451,10 @@ export function WorkspaceShell({ aiConfigured }: { aiConfigured: boolean }) {
           <div className="border-b border-border bg-card/60 px-3 py-1.5">
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="editor" className="text-xs">
-                <FileText className="size-3.5 mr-1.5" /> Editor
+                <IconFileText className="size-3.5 mr-1.5" /> Editor
               </TabsTrigger>
               <TabsTrigger value="ai" className="text-xs relative">
-                <Sparkles className="size-3.5 mr-1.5 text-primary" /> Tailor
+                <IconSparkles className="size-3.5 mr-1.5 text-primary" /> Tailor
                 {pendingChanges > 0 && (
                   <Badge className="ml-1.5 h-4 min-w-4 px-1 text-[8px] bg-primary text-primary-foreground">
                     {pendingChanges}
@@ -434,13 +469,13 @@ export function WorkspaceShell({ aiConfigured }: { aiConfigured: boolean }) {
 
           {/* Sub-navigation for Editor */}
           {activeMobileTab === "editor" && (
-            <div className="flex gap-1 overflow-x-auto border-b border-border bg-background px-3 py-1.5">
-              {(["overview", "experience", "projects", "skills", "education", "format", "guidance", "latex"] as WorkspacePanel[]).map((id) => (
+            <div className="relative flex gap-1.5 overflow-x-auto border-b border-border bg-background px-3 py-2 [scrollbar-width:none] [-webkit-overflow-scrolling:touch]">
+              {(["overview", "experience", "projects", "skills", "education", "certifications", "achievements", "format", "guidance", "latex"] as WorkspacePanel[]).map((id) => (
                 <Button
                   key={id}
                   size="sm"
                   variant={panel === id ? "secondary" : "ghost"}
-                  className="h-7 shrink-0 text-[11px] capitalize"
+                  className="h-8 shrink-0 px-3 text-xs capitalize touch-manipulation"
                   onClick={() => {
                     setMobileTabOverride(null);
                     setPanel(id);
@@ -454,13 +489,13 @@ export function WorkspaceShell({ aiConfigured }: { aiConfigured: boolean }) {
 
           {/* Sub-navigation for AI Tailoring */}
           {activeMobileTab === "ai" && (
-            <div className="flex gap-1 overflow-x-auto border-b border-border bg-background px-3 py-1.5">
+            <div className="relative flex gap-1.5 overflow-x-auto border-b border-border bg-background px-3 py-2 [scrollbar-width:none] [-webkit-overflow-scrolling:touch]">
               {(["job", "changes"] as WorkspacePanel[]).map((id) => (
                 <Button
                   key={id}
                   size="sm"
                   variant={panel === id ? "secondary" : "ghost"}
-                  className="h-7 shrink-0 text-[11px] capitalize"
+                  className="h-8 shrink-0 px-3 text-xs capitalize touch-manipulation"
                   onClick={() => {
                     setMobileTabOverride(null);
                     setPanel(id);

@@ -32,7 +32,6 @@ test("landing page renders with ArqeloCV branding and zero errors", async ({ pag
   await expect(page.getByRole("link", { name: "Open Source" }).first()).toBeVisible();
 
   // Check key sections
-  await expect(page.getByRole("heading", { name: "A focused review desk for engineering resumes" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Engineered for technical resumes" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Three straightforward steps" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Tailored without making things up." })).toBeVisible();
@@ -40,7 +39,7 @@ test("landing page renders with ArqeloCV branding and zero errors", async ({ pag
   await expect(page.getByRole("heading", { name: "Build a better engineering resume." })).toBeVisible();
 
   // Check FAQ answers
-  await expect(page.getByText(/ArqeloCV is an AI resume builder designed primarily for software engineers/i)).toBeVisible();
+  await expect(page.getByText(/The system prompt strictly instructs the model to only use facts/i)).toBeVisible();
 
   // Check footer author link
   const authorLink = page.locator('footer a[href="https://ashutoshtiwari.dev"]');

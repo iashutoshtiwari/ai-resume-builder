@@ -135,6 +135,8 @@ export function buildResumePrompt(
       "For students, prioritize projects with deep engineering substance. For experienced engineers, prioritize professional experience over side projects.",
       "CRITICAL: Never fabricate metrics, employers, degrees, dates, or technologies. Keep all factual meaning faithful to the candidate profile.",
       "Retain or assign stable unique IDs to every repeatable item.",
+      "Return structured Resume JSON only. Do not emit LaTeX, Markdown, styling fields, packages, commands, margins, fonts, colors, or layout instructions.",
+      "Improve page fit only through concise content selection; never propose formatting changes.",
     ],
     guidanceJson,
     customBlocks: [
@@ -170,6 +172,8 @@ export function fullTailorPrompt(
       "If a summary section is enabled/present, adapt it concisely (2–3 lines) to position the candidate for this target role.",
       "Fix grammar, improve technical clarity, and strengthen action verbs.",
       "ABSOLUTE RULE: NEVER INVENT unproven technologies, metrics, employers, or roles.",
+      "Return structured resume content only. Do not emit or modify LaTeX, Markdown, packages, commands, margins, fonts, colors, or layout settings.",
+      "If content is too long, shorten or remove lower-value content; never recommend formatting compression.",
       `Return a complete tailored resume in "tailoredResume", a high-level summary in "summary", atomic differences in "changes" (status "pending", revision "${revision}"), and unsupported requirements in "gaps".`,
     ],
     guidanceJson,
@@ -200,5 +204,4 @@ export function repairPrompt(
 ): [string, string] {
   return buildTargetedRepairPrompt(original, issues, invalidOutput);
 }
-
 

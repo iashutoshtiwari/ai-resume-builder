@@ -18,4 +18,28 @@ describe("session history", () => {
     useWorkspaceStore.getState().redo();
     expect(useWorkspaceStore.getState().workspace!.resume.basics.headline).toBe("Staff Engineer");
   });
+
+  it("preserves manual source across structured edits until an explicit restore", async () => {
+    await useWorkspaceStore.getState().startWorkspace(sampleResume, null);
+    const generated = useWorkspaceStore.getState().workspace!.generatedLatex;
+    const manual = `${generated}\n% user override`;
+
+    useWorkspaceStore.getState().setManualLatex(manual);
+    useWorkspaceStore.getState().updateResume((resume) => ({
+      ...resume,
+      basics: { ...resume.basics, headline: "Staff Engineer" },
+    }));
+
+    const overridden = useWorkspaceStore.getState().workspace!;
+    expect(overridden.latexMode).toBe("manual");
+    expect(overridden.manualLatex).toBe(manual);
+    expect(overridden.manualLatexStale).toBe(true);
+    expect(overridden.generatedLatex).toContain("Staff Engineer");
+
+    useWorkspaceStore.getState().resetManualLatex();
+    const restored = useWorkspaceStore.getState().workspace!;
+    expect(restored.latexMode).toBe("generated");
+    expect(restored.manualLatex).toBeNull();
+    expect(restored.manualLatexStale).toBe(false);
+  });
 });

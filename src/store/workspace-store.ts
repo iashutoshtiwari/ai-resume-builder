@@ -6,6 +6,7 @@ import { validateChangeAgainstResume } from "@/features/changes/validate-change"
 import type { ProofreadingChange, ResumeChange, UnsupportedGap } from "@/features/changes/schema";
 import type { JobAnalysis, JobComparison, TargetJob } from "@/features/jobs/schema";
 import { renderResumeToLatex } from "@/features/latex/renderer";
+import { CANONICAL_TEMPLATE_VERSION } from "@/features/latex/templates/canonical";
 import { DEFAULT_PRESENTATION, type ResumePresentation } from "@/features/presentation/schema";
 import { type CandidateProfile, resumeToCandidateProfile } from "@/features/resume/candidate-profile";
 import type { CareerStage, Resume } from "@/features/resume/schema";
@@ -14,7 +15,7 @@ import type { LatexProjectFile } from "@/features/workspace/schema";
 import { clearWorkspace, loadWorkspace, saveWorkspace } from "@/lib/storage/workspace-db";
 import { createId, hashText } from "@/lib/utils";
 
-export type WorkspacePanel = "overview" | "experience" | "projects" | "skills" | "education" | "format" | "guidance" | "job" | "changes" | "latex";
+export type WorkspacePanel = "overview" | "experience" | "projects" | "skills" | "education" | "certifications" | "achievements" | "format" | "guidance" | "job" | "changes" | "latex";
 type SaveStatus = "idle" | "saving" | "saved" | "error" | "corrupt";
 
 export type ActiveAiProvider = "google" | "groq" | "openrouter";
@@ -64,7 +65,7 @@ type WorkspaceStore = {
   acceptChange: (id: string, editedAfter?: string) => { ok: boolean; message?: string };
   acceptAllSafe: () => { applied: number; rejected: number };
   rejectRemaining: () => void;
-  setManualLatex: (source: string | null) => void;
+  setManualLatex: (source: string) => void;
   resetManualLatex: () => void;
   setPresentation: (presentation: ResumePresentation) => void;
   addCompilerFiles: (files: LatexProjectFile[]) => void;
@@ -85,7 +86,7 @@ function withResume(workspace: Workspace, resume: Resume): Workspace {
     ...workspace,
     resume,
     generatedLatex: renderResumeToLatex(resume, workspace.presentation),
-    manualLatexStale: workspace.manualLatex !== null,
+    manualLatexStale: workspace.latexMode === "manual",
     resumeRevision: nextRevision(),
     updatedAt: new Date().toISOString(),
   };
@@ -131,7 +132,7 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => ({
     const revision = await hashText(JSON.stringify(resume));
     const candidateProfile = profile ?? resumeToCandidateProfile(resume);
     const workspace: Workspace = {
-      version: 3,
+      version: 4,
       id: createId("workspace"),
       name,
       resume,
@@ -144,6 +145,8 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => ({
       activeVariant: "current",
       originalLatex,
       generatedLatex,
+      templateVersion: CANONICAL_TEMPLATE_VERSION,
+      latexMode: "generated",
       manualLatex: null,
       manualLatexStale: false,
       compilerFiles: [],
@@ -310,8 +313,8 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => ({
     }
   },
   rejectRemaining: () => set((state) => state.workspace ? { workspace: { ...state.workspace, tailoringChanges: state.workspace.tailoringChanges.map((change) => change.status === "pending" ? { ...change, status: "rejected" as const } : change), updatedAt: new Date().toISOString() }, saveStatus: "saving" } : state),
-  setManualLatex: (manualLatex) => set((state) => state.workspace ? { workspace: { ...state.workspace, manualLatex, manualLatexStale: false, updatedAt: new Date().toISOString() }, saveStatus: "saving" } : state),
-  resetManualLatex: () => set((state) => state.workspace ? { workspace: { ...state.workspace, manualLatex: null, manualLatexStale: false, updatedAt: new Date().toISOString() }, saveStatus: "saving" } : state),
+  setManualLatex: (manualLatex) => set((state) => state.workspace ? { workspace: { ...state.workspace, latexMode: "manual", manualLatex, manualLatexStale: false, lastCompiledSourceHash: null, lastCompiledPageCount: null, updatedAt: new Date().toISOString() }, saveStatus: "saving" } : state),
+  resetManualLatex: () => set((state) => state.workspace ? { workspace: { ...state.workspace, latexMode: "generated", manualLatex: null, manualLatexStale: false, lastCompiledSourceHash: null, lastCompiledPageCount: null, updatedAt: new Date().toISOString() }, saveStatus: "saving" } : state),
   setPresentation: (presentation) => set((state) => {
     if (!state.workspace) return state;
     return {
@@ -319,7 +322,7 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => ({
         ...state.workspace,
         presentation,
         generatedLatex: renderResumeToLatex(state.workspace.resume, presentation),
-        manualLatexStale: state.workspace.manualLatex !== null,
+        manualLatexStale: state.workspace.latexMode === "manual",
         lastCompiledSourceHash: null,
         lastCompiledPageCount: null,
         updatedAt: new Date().toISOString(),

@@ -2,10 +2,10 @@
 
 import { useMemo, useState } from "react";
 import {
-  ChevronDown,
-  ChevronUp,
-  Sparkles,
-} from "lucide-react";
+  IconChevronDown,
+  IconChevronUp,
+  IconSparkles,
+} from "@tabler/icons-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -52,7 +52,7 @@ export function ScoreCard({ resume }: { resume: Resume }) {
       <div className="flex flex-col gap-4 border-b border-border p-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <div className="grid size-9 place-items-center rounded-none border border-primary/30 bg-primary/10 text-primary">
-            <Sparkles className="size-4" />
+            <IconSparkles className="size-4" />
           </div>
           <div>
             <div className="flex items-center gap-2">
@@ -129,11 +129,11 @@ export function ScoreCard({ resume }: { resume: Resume }) {
             >
               {expanded ? (
                 <>
-                  Less <ChevronUp className="ml-1 size-3.5" />
+                  Less <IconChevronUp className="ml-1 size-3.5" />
                 </>
               ) : (
                 <>
-                  Details <ChevronDown className="ml-1 size-3.5" />
+                  Details <IconChevronDown className="ml-1 size-3.5" />
                 </>
               )}
             </Button>

@@ -36,7 +36,7 @@ Most modern AI resume tools suffer from three fatal flaws: they generate fragile
 
 **ArqeloCV is a compiler-grade, local-first engineering tool:**
 
-1. **Deterministic Single-Column LaTeX**: Structured JSON is the resume source of truth. Typeset using canonical single-column TeX templates guaranteed to parse cleanly across every enterprise ATS parser.
+1. **Deterministic Single-Column LaTeX**: Structured JSON is the resume source of truth. One versioned canonical template owns typography and layout; AI only proposes validated resume wording.
 2. **Zero-Hallucination Factuality Guardrails**: Multi-pass AST token validators prevent the AI from inventing unearned technologies, fabricating metrics (e.g. ungrounded `$2.5M revenue` claims), or altering employers and graduation dates.
 3. **Stage & Locale Aware Intelligence**: Tuned for high-volume Indian product & campus hiring (Tier-1/2 project expectations, degree nomenclature) while supporting US & Canadian standards across 8 distinct career stages.
 4. **Authoritative Sandboxed TeX Engine**: Compiles real PDF documents using a dedicated containerized TeX Live microservice with shell-escape disabled, disposable temp directories, and scale-to-zero capabilities ($0/mo cost on Cloud Run).
@@ -73,7 +73,7 @@ flowchart TD
     end
 
     subgraph COMPILATION["5. Authoritative Output"]
-        N --> O[Dynamic LaTeX Renderer\nEscaping · Dynamic Sections]
+        N --> O[Canonical LaTeX Renderer v1\nEscaping · Ordered Optional Sections]
         O --> P[Docker TeX Live Microservice\nSandboxed · Ephemeral · No Shell Escape]
         P --> Q[Clean ATS-Compliant Vector PDF]
     end
@@ -90,6 +90,7 @@ flowchart TD
 | **Career Stage Intelligence** | 8 Career Tiers | Detects `Student`, `New Grad`, `Early Career`, `Mid-Level`, `Senior`, `Staff/Principal`, `Career Changer`, and `Returning Professional`. |
 | **One-Click Tailoring** | Instant Proposals & Snapshot Restores | Full tailored proposals applied with one click; revert individual changes or restore the baseline at any time. |
 | **Dynamic LaTeX Sections** | 7 First-Class Resume Sections | Deterministic rendering for `Summary`, `Experience`, `Projects`, `Skills`, `Education`, `Certifications`, and `Achievements`. |
+| **Canonical Template Lock** | One Template, Explicit Override | Generated mode permits only paper size and section order/visibility; manual LaTeX mode is the intentional escape hatch. |
 | **Authoritative TeX Sandbox** | Containerized Compilation | Restricted Docker TeX Live engine with `-no-shell-escape`, memory limits, 25s timeout, and disposable build trees. |
 | **Local-First Privacy** | Client-Side Storage | IndexedDB persistence with bounded undo/redo history; zero server-side resume logging. |
 
@@ -182,7 +183,7 @@ curl http://localhost:8080/health
 ### Free Deployment on Google Cloud Run ($0/mo)
 
 The microservice is optimized for Google Cloud Run Free Tier:
-- **Curated TeX Packages**: Pre-packages fonts (`XCharter`, `Latin Modern`, `newtx`, `Inter`, `Roboto`, `Inconsolata`) and styling packages (`titlesec`, `enumitem`, `tabularx`, `fontawesome5`).
+- **Canonical TeX Dependencies**: Includes the fixed XCharter, microtype, geometry, titlesec, enumitem, and hyperlink dependencies used by the ArqeloCV template.
 - **Scale-to-Zero**: `--min-instances 0` ensures zero cost when idle.
 - **Fast & Sandboxed**: 1.2s average compile time, non-root `latexuser`, and `-no-shell-escape`.
 
@@ -254,8 +255,8 @@ ai-resume-builder/
 │   │   ├── guidance/          # Modular engineering resume knowledge base
 │   │   ├── import/            # Multi-format upload & extraction review screen
 │   │   ├── jobs/              # Job requirement schemas & analysis models
-│   │   ├── latex/             # Deterministic LaTeX renderer & TeX escaping
-│   │   ├── presentation/      # Format panel, fonts, margins, section order
+│   │   ├── latex/             # Canonical template, deterministic renderer & escaping
+│   │   ├── presentation/      # Paper size plus section visibility/order allowlist
 │   │   ├── resume/            # CandidateProfileSchema & ResumeSchema contracts
 │   │   └── workspace/         # Panels, overview, Diff viewer, PDF preview
 │   ├── lib/
@@ -266,7 +267,7 @@ ai-resume-builder/
 ├── tests/
 │   ├── domain/                # Domain evaluation test suite (Sections 77–81)
 │   └── e2e/                   # Playwright visual regression suite
-└── main.tex                   # Canonical LaTeX template fixture
+└── main.tex                   # Original standalone compile fixture (not runtime generation)
 ```
 
 ---

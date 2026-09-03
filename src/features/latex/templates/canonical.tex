@@ -1,0 +1,380 @@
+% =============================================================================
+% ArqeloCV — Canonical Resume Template
+% =============================================================================
+%
+% PURPOSE
+% -------
+% This is the canonical LaTeX template used by ArqeloCV to generate
+% software-engineering resumes.
+%
+% IMPORTANT RULES FOR AI / TEMPLATE RENDERER
+% ------------------------------------------
+% 1. Never invent experience, skills, technologies, metrics, dates,
+%    certifications, achievements, employers, titles, or education.
+%
+% 2. Only render sections that contain meaningful content.
+%    Empty sections should be omitted entirely.
+%
+% 3. Section order may be changed according to career stage and relevance.
+%
+%    Typical experienced candidate:
+%      Experience -> Skills -> Projects -> Certifications/Achievements -> Education
+%
+%    Typical student/new graduate:
+%      Education/Experience -> Projects -> Skills -> Certifications/Achievements
+%
+% 4. Prefer one page for students through mid-level/senior candidates when
+%    possible without harming readability.
+%
+% 5. Experience bullets should:
+%      - begin with a strong action verb;
+%      - contain one sentence;
+%      - preferably occupy 1--2 lines;
+%      - explain action, context, and impact where evidence exists;
+%      - use STAR / CAR / XYZ principles naturally;
+%      - NEVER fabricate quantitative impact.
+%
+% 6. Professional experience has priority over project experience for
+%    candidates who already have meaningful professional experience.
+%
+% 7. Projects should represent substantial work. Avoid trivial tutorial or
+%    coursework projects unless they materially strengthen a student resume.
+%
+% 8. Certifications should be relevant to the target role or meaningfully
+%    strengthen the candidate profile.
+%
+% 9. Achievements should be genuinely notable. Do not turn routine job
+%    responsibilities into "achievements".
+%
+% 10. Escape LaTeX-sensitive characters in user-generated content:
+%       &  %  $  #  _  {  }  ~  ^  \
+%
+% 11. Preserve factual dates exactly unless the user explicitly corrects them.
+%
+% =============================================================================
+
+\documentclass[11pt]{article}
+
+% -----------------------------------------------------------------------------
+% PAGE LAYOUT
+% -----------------------------------------------------------------------------
+% North America: use letterpaper.
+% India / most other regions: the application may switch this to a4paper.
+%
+% Keep margins compact but readable. Do not shrink them further merely to
+% force excessive content onto one page.
+% -----------------------------------------------------------------------------
+\usepackage[
+  letterpaper,
+  top=0.5in,
+  bottom=0.5in,
+  left=0.5in,
+  right=0.5in
+]{geometry}
+
+% -----------------------------------------------------------------------------
+% TYPOGRAPHY
+% -----------------------------------------------------------------------------
+\usepackage{XCharter}            % Primary resume font.
+\usepackage[T1]{fontenc}         % Better PDF font encoding.
+\usepackage[utf8]{inputenc}      % UTF-8 source input.
+\usepackage{microtype}           % Subtle typography/spacing improvements.
+
+% -----------------------------------------------------------------------------
+% RESUME UTILITIES
+% -----------------------------------------------------------------------------
+\usepackage{enumitem}            % Compact bullet lists.
+\usepackage[hidelinks]{hyperref} % Clickable links without colored boxes.
+\usepackage{titlesec}            % Section-heading formatting.
+
+\raggedright
+\pagestyle{empty}
+\urlstyle{same}
+\setlength{\parindent}{0pt}
+
+% -----------------------------------------------------------------------------
+% MACHINE-READABLE PDF
+% -----------------------------------------------------------------------------
+% Important for ATS/text extraction.
+% -----------------------------------------------------------------------------
+\input{glyphtounicode}
+\pdfgentounicode=1
+
+% -----------------------------------------------------------------------------
+% SECTION HEADINGS
+% -----------------------------------------------------------------------------
+\titleformat{\section}
+  {\bfseries\large}
+  {}
+  {0pt}
+  {}
+  [\vspace{1pt}\titlerule\vspace{-6.5pt}]
+
+% -----------------------------------------------------------------------------
+% BULLET LISTS
+% -----------------------------------------------------------------------------
+\renewcommand\labelitemi{$\vcenter{\hbox{\small$\bullet$}}$}
+
+\setlist[itemize]{
+  itemsep=-2pt,
+  leftmargin=12pt,
+  topsep=7pt
+}
+
+% =============================================================================
+% RESUME CONTENT
+% =============================================================================
+
+\begin{document}
+
+% -----------------------------------------------------------------------------
+% NAME
+% -----------------------------------------------------------------------------
+% Render the candidate's preferred professional name.
+% Do not include honorifics unless explicitly requested.
+% -----------------------------------------------------------------------------
+\centerline{\Huge John Doe}
+
+\vspace{5pt}
+
+% -----------------------------------------------------------------------------
+% CONTACT INFORMATION
+% -----------------------------------------------------------------------------
+% Keep this concise and on one line when possible.
+%
+% Recommended:
+%   Email | Phone | LinkedIn | GitHub | Portfolio
+%
+% Only render fields actually provided by the candidate.
+% Use readable labels instead of extremely long raw URLs.
+% -----------------------------------------------------------------------------
+\centerline{
+  \href{mailto:name@gmail.com}{name@gmail.com}
+  \;|\;
+  \href{https://linkedin.com/in/name}{linkedin.com/in/name}
+  \;|\;
+  \href{https://github.com/name}{github.com/name}
+  \;|\;
+  \href{https://portfolio.com}{portfolio.com}
+}
+
+\vspace{-10pt}
+
+% -----------------------------------------------------------------------------
+% OPTIONAL SUMMARY
+% -----------------------------------------------------------------------------
+% Render ONLY when the application determines that a summary adds value,
+% e.g. senior candidates, career changers, returning professionals, or
+% candidates whose background needs framing.
+%
+% Maximum: 2--3 concise lines.
+%
+% Do NOT generate generic statements such as:
+% "Passionate software engineer with excellent problem-solving skills."
+%
+% Example:
+%
+% \section*{Summary}
+% Software engineer with 6+ years of experience building scalable frontend
+% platforms with React and TypeScript, with additional experience across
+% Node.js services, CI/CD, and cloud-native delivery.
+%
+% \vspace{-6.5pt}
+
+% -----------------------------------------------------------------------------
+% SKILLS
+% -----------------------------------------------------------------------------
+% Group related skills instead of dumping a flat keyword list.
+%
+% Use categories appropriate to the candidate, for example:
+%   Languages
+%   Frontend
+%   Backend
+%   Databases
+%   Cloud / DevOps
+%   Tools
+%
+% Never add a technology solely because it appears in the job description.
+% -----------------------------------------------------------------------------
+\section*{Skills}
+
+\textbf{Languages:} JavaScript, TypeScript, Java, SQL \\
+\textbf{Frontend:} React, Next.js, Redux, Tailwind CSS \\
+\textbf{Backend:} Node.js, Spring Boot, REST APIs \\
+\textbf{Data \& DevOps:} PostgreSQL, Docker, GitHub Actions, Azure
+
+\vspace{-6.5pt}
+
+% -----------------------------------------------------------------------------
+% EXPERIENCE
+% -----------------------------------------------------------------------------
+% For candidates with meaningful professional experience, this should usually
+% be the strongest section of the resume.
+%
+% Format:
+%   Job Title, Company -- Location                     Mon YYYY -- Present
+%
+% Bullet guidance:
+%   - Prefer 3--5 strong bullets for recent/relevant roles.
+%   - Older or less relevant roles may use fewer bullets.
+%   - Start with action verbs.
+%   - Describe accomplishments and technical contribution.
+%   - Use metrics only when supported by candidate evidence.
+%   - Do not invent scope, ownership, leadership, or impact.
+% -----------------------------------------------------------------------------
+\section*{Experience}
+
+\textbf{Software Engineer,} {Company Name} -- City, ST
+\hfill June 2022 -- Present \\
+
+\vspace{-9pt}
+
+\begin{itemize}
+  \item Built and maintained production features using React and TypeScript, improving product usability across key customer workflows.
+  \item Developed reusable frontend components and shared application patterns to reduce duplication across product surfaces.
+  \item Collaborated with product, design, backend, and QA teams to deliver features from requirements through production release.
+\end{itemize}
+
+\textbf{Software Engineer,} {Previous Company} -- City, ST
+\hfill Jan 2021 -- May 2022 \\
+
+\vspace{-9pt}
+
+\begin{itemize}
+  \item Developed customer-facing application features while working within an established engineering and release workflow.
+  \item Improved maintainability by refactoring reusable components and reducing duplicated frontend logic.
+  \item Investigated production issues and implemented fixes across frontend application flows.
+\end{itemize}
+
+\vspace{-18.5pt}
+
+% -----------------------------------------------------------------------------
+% PROJECTS
+% -----------------------------------------------------------------------------
+% Project priority depends on career stage.
+%
+% Students / new graduates:
+%   Projects may be a primary source of technical evidence.
+%
+% Experienced candidates:
+%   Include only projects that add meaningful technical evidence not already
+%   demonstrated by professional experience.
+%
+% Good projects generally demonstrate:
+%   - non-trivial engineering work;
+%   - practical usage;
+%   - meaningful architecture/technical decisions;
+%   - active development or real users;
+%   - technologies relevant to the candidate's target roles.
+%
+% Do not describe mandatory tutorials as major independent projects.
+% -----------------------------------------------------------------------------
+\section*{Projects}
+
+\textbf{Project Title}
+\hfill
+\href{https://github.com/name/project}{github.com/name/project} \\
+
+\vspace{-9pt}
+
+\begin{itemize}
+  \item Built a full-stack application using Next.js, TypeScript, PostgreSQL, and Docker to solve a specific user problem.
+  \item Designed the application architecture and implemented core workflows, API integration, persistence, and deployment.
+\end{itemize}
+
+\textbf{Project Title}
+\hfill
+\href{https://project.com}{project.com} \\
+
+\vspace{-9pt}
+
+\begin{itemize}
+  \item Developed and maintained a practical software tool used to automate or simplify a recurring engineering workflow.
+  \item Implemented relevant technical features while maintaining documentation, source control, and release history.
+\end{itemize}
+
+\vspace{-18.5pt}
+
+% -----------------------------------------------------------------------------
+% CERTIFICATIONS — OPTIONAL
+% -----------------------------------------------------------------------------
+% Render this section only when certifications meaningfully strengthen the
+% candidate's resume.
+%
+% Preferred format:
+%   Certification Name -- Issuer                         Mon YYYY
+%
+% A credential link may be attached to the certification name when available.
+%
+% Do not list:
+%   - expired certifications without context;
+%   - trivial course-completion certificates;
+%   - certificates unrelated to the candidate's target roles merely to fill space.
+%
+% If space is limited, relevant experience/projects should usually take priority.
+% -----------------------------------------------------------------------------
+\section*{Certifications}
+
+\textbf{Certification Name} -- Issuing Organization
+\hfill June 2024 \\
+
+\textbf{\href{https://credential.example.com}{Certification Name}}
+-- Issuing Organization
+\hfill Jan 2023
+
+\vspace{-6.5pt}
+
+% -----------------------------------------------------------------------------
+% ACHIEVEMENTS — OPTIONAL
+% -----------------------------------------------------------------------------
+% Render only genuine, notable achievements.
+%
+% Examples:
+%   - competitive programming results;
+%   - hackathon wins;
+%   - meaningful open-source recognition;
+%   - patents;
+%   - significant scholarships/academic honors;
+%   - major company awards;
+%   - recognized technical accomplishments.
+%
+% Keep entries short.
+% Prefer one line per achievement where possible.
+%
+% Do NOT duplicate achievements already communicated strongly within
+% Experience or Projects.
+% -----------------------------------------------------------------------------
+\section*{Achievements}
+
+\begin{itemize}
+  \item Achieved a notable engineering, academic, open-source, or competitive programming accomplishment with relevant context.
+  \item Received a meaningful technical award or recognition from an identifiable organization.
+\end{itemize}
+
+\vspace{-18.5pt}
+
+% -----------------------------------------------------------------------------
+% EDUCATION
+% -----------------------------------------------------------------------------
+% Usually keep this compact for experienced candidates.
+%
+% Students/new graduates may include:
+%   - expected graduation date;
+%   - GPA only when strong/relevant;
+%   - selected honors;
+%   - relevant coursework only when it adds meaningful signal.
+%
+% Experienced engineers normally do not need coursework.
+% -----------------------------------------------------------------------------
+\section*{Education}
+
+\textbf{School Name} -- PhD in Aerospace Engineering
+\hfill June 2010 \\
+
+\textbf{School Name} -- MS in Aerospace Engineering
+\hfill June 2006 \\
+
+\textbf{School Name} -- BS in Aerospace Engineering
+\hfill Apr 2004
+
+\end{document}

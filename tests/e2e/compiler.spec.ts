@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
-test("TeX Live compiles the rendered resume and canonical main.tex in Chromium", async ({ page }) => {
+test("TeX Live compiles generated output and the supplied canonical template in Chromium", async ({ page }) => {
   test.setTimeout(180_000);
   await page.goto("/");
   await page.getByRole("button", { name: /start instantly with a sample/i }).click();
@@ -10,16 +10,16 @@ test("TeX Live compiles the rendered resume and canonical main.tex in Chromium",
   await page.getByRole("button", { name: /compile/i }).first().click();
   await expect(page.getByRole("button", { name: "Download PDF" })).toBeEnabled({ timeout: 150_000 });
   await expect(page.getByText(/LaTeX compilation failed/i)).toHaveCount(0);
-  const mainTex = await readFile(resolve(process.cwd(), "main.tex"), "utf8");
+  const canonicalTex = await readFile(resolve(process.cwd(), "src/features/latex/templates/canonical.tex"), "utf8");
   await page.getByRole("button", { name: "LaTeX Source" }).click();
   const editor = page.locator(".monaco-editor").first();
   await editor.click({ position: { x: 180, y: 180 } });
   await page.keyboard.press(process.platform === "darwin" ? "Meta+A" : "Control+A");
-  await page.keyboard.insertText(mainTex);
-  await expect(page.getByText("PREVIEW STALE")).toBeVisible();
+  await page.keyboard.insertText(canonicalTex);
+  await expect(page.getByText("STALE", { exact: true })).toBeVisible();
   const recompile = page.getByRole("button", { name: "Recompile" });
   await recompile.click();
-  await expect(page.getByText("PREVIEW STALE")).toHaveCount(0, { timeout: 150_000 });
+  await expect(page.getByText("STALE", { exact: true })).toHaveCount(0, { timeout: 150_000 });
   await page.waitForTimeout(1_000);
   const pdfInfo = await page.evaluate(async () => {
     const database = await new Promise<IDBDatabase>((resolve, reject) => {
@@ -41,4 +41,13 @@ test("TeX Live compiles the rendered resume and canonical main.tex in Chromium",
   });
   expect(pdfInfo.header).toBe("%PDF-");
   expect(pdfInfo.size).toBeGreaterThan(5_000);
+
+  await page.getByRole("button", { name: "Restore ArqeloCV Template" }).click();
+  await expect(page.getByRole("alertdialog")).toContainText(/replace those changes/i);
+  await page.getByRole("button", { name: "Cancel" }).click();
+  await expect(page.getByRole("heading", { name: "Manual LaTeX Override" })).toBeVisible();
+
+  await page.getByRole("button", { name: "Restore ArqeloCV Template" }).click();
+  await page.getByRole("button", { name: "Restore template" }).click();
+  await expect(page.getByRole("heading", { name: "Generated / Structured Mode" })).toBeVisible();
 });

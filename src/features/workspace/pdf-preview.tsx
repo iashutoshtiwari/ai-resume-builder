@@ -5,18 +5,19 @@ import { Document, Page, pdfjs } from "react-pdf";
 import "react-pdf/dist/Page/TextLayer.css";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import {
-  ChevronLeft,
-  ChevronRight,
-  Download,
-  FileWarning,
-  Maximize2,
-  Minus,
-  Plus,
-  RefreshCw,
-} from "lucide-react";
+  IconChevronLeft,
+  IconChevronRight,
+  IconDownload,
+  IconFileAlert,
+  IconMaximize,
+  IconMinus,
+  IconPlus,
+  IconRefresh,
+} from "@tabler/icons-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { RemoteLatexCompiler } from "@/features/latex/compiler";
+import { getActiveLatexSource } from "@/features/latex/active-source";
 import { hashCompileInput } from "@/features/latex/source-hash";
 import { sanitizeFilename } from "@/lib/utils";
 import { useWorkspaceStore } from "@/store/workspace-store";
@@ -43,12 +44,20 @@ export function PdfPreview({ compact = false }: { compact?: boolean }) {
   const setSuccess = useWorkspaceStore((state) => state.setCompileSuccess);
   const setFailure = useWorkspaceStore((state) => state.setCompileFailure);
   const setCompiledPageCount = useWorkspaceStore((state) => state.setCompiledPageCount);
-  const source = workspace.manualLatex ?? workspace.generatedLatex;
+  const source = getActiveLatexSource(workspace);
   const [sourceHash, setSourceHash] = useState<string | null>(null);
   const [pages, setPages] = useState(0);
   const [page, setPage] = useState(1);
   const [zoom, setZoom] = useState(0.82);
   const viewportRef = useRef<HTMLDivElement>(null);
+
+  const calculateFitZoom = () => {
+    if (!viewportRef.current) return 0.82;
+    const availableWidth = viewportRef.current.clientWidth - 40;
+    if (availableWidth <= 0) return 0.82;
+    const fitted = availableWidth / 612;
+    return Number(Math.min(1.8, Math.max(0.42, fitted)).toFixed(2));
+  };
 
   useEffect(() => {
     let alive = true;
@@ -59,6 +68,12 @@ export function PdfPreview({ compact = false }: { compact?: boolean }) {
       alive = false;
     };
   }, [source, workspace.compilerFiles]);
+
+  useEffect(() => {
+    if (!viewportRef.current) return;
+    const initialFit = calculateFitZoom();
+    setZoom(initialFit);
+  }, []);
 
   const stale = Boolean(pdfBlob && sourceHash && workspace.lastCompiledSourceHash !== sourceHash);
 
@@ -87,28 +102,36 @@ export function PdfPreview({ compact = false }: { compact?: boolean }) {
   );
 
   const controls = (
-    <div className="flex items-center gap-1">
+    <div className="flex items-center gap-0.5 sm:gap-1">
       <Button
         size="icon-sm"
         variant="ghost"
-        onClick={() => setZoom((value) => Math.max(0.4, value - 0.1))}
+        className="size-8 sm:size-9 touch-manipulation"
+        onClick={() => setZoom((value) => Math.max(0.4, Number((value - 0.1).toFixed(2))))}
         aria-label="Zoom out"
       >
-        <Minus />
+        <IconMinus className="size-3.5" />
       </Button>
-      <span className="w-12 text-center font-mono text-[10px] text-muted-foreground">
+      <span className="hidden sm:inline-block w-11 text-center font-mono text-[10px] text-muted-foreground">
         {Math.round(zoom * 100)}%
       </span>
       <Button
         size="icon-sm"
         variant="ghost"
-        onClick={() => setZoom((value) => Math.min(1.8, value + 0.1))}
+        className="size-8 sm:size-9 touch-manipulation"
+        onClick={() => setZoom((value) => Math.min(1.8, Number((value + 0.1).toFixed(2))))}
         aria-label="Zoom in"
       >
-        <Plus />
+        <IconPlus className="size-3.5" />
       </Button>
-      <Button size="icon-sm" variant="ghost" onClick={() => setZoom(0.82)} aria-label="Fit page">
-        <Maximize2 />
+      <Button
+        size="icon-sm"
+        variant="ghost"
+        className="size-8 sm:size-9 touch-manipulation"
+        onClick={() => setZoom(calculateFitZoom())}
+        aria-label="Fit page"
+      >
+        <IconMaximize className="size-3.5" />
       </Button>
     </div>
   );
@@ -117,36 +140,39 @@ export function PdfPreview({ compact = false }: { compact?: boolean }) {
     <section
       className={`flex h-full min-h-0 flex-col bg-zinc-950 text-foreground ${compact ? "min-h-[680px]" : ""}`}
     >
-      <div className="flex h-14 shrink-0 items-center justify-between border-b border-border bg-card/60 px-3 text-foreground">
-        <div className="flex items-center gap-2">
+      <div className="flex h-14 shrink-0 items-center justify-between border-b border-border bg-card/60 px-2 sm:px-3 text-foreground gap-1.5 sm:gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           <Button
             size="sm"
             variant="default"
+            className="h-8 px-2.5 sm:px-3 text-xs touch-manipulation"
             disabled={compileStatus === "compiling"}
             onClick={() => void compile()}
           >
-            {compileStatus === "compiling" ? <RefreshCw className="animate-spin" /> : <RefreshCw />}
-            {pdfBlob ? "Recompile" : "Compile"}
+            {compileStatus === "compiling" ? <IconRefresh className="animate-spin size-3.5" /> : <IconRefresh className="size-3.5" />}
+            <span className="hidden min-[380px]:inline">{pdfBlob ? "Recompile" : "Compile"}</span>
           </Button>
 
-          {stale && <span className="font-mono text-[10px] text-amber-400">PREVIEW STALE</span>}
+          {stale && <span className="hidden sm:inline font-mono text-[10px] text-amber-400">STALE</span>}
         </div>
 
         {controls}
 
-        <div className="flex gap-1">
+        <div className="flex gap-0.5 sm:gap-1 shrink-0">
           <Button
             size="icon-sm"
             variant="ghost"
+            className="size-8 sm:size-9 touch-manipulation"
             disabled={!pdfBlob}
             onClick={() => pdfBlob && downloadBlob(pdfBlob, `${filename}.pdf`)}
             aria-label="Download PDF"
           >
-            <Download />
+            <IconDownload className="size-3.5" />
           </Button>
           <Button
             size="icon-sm"
             variant="ghost"
+            className="size-8 sm:size-9 touch-manipulation"
             onClick={() => downloadBlob(new Blob([source], { type: "application/x-tex" }), `${filename}.tex`)}
             aria-label="Download LaTeX"
           >
@@ -171,7 +197,7 @@ export function PdfPreview({ compact = false }: { compact?: boolean }) {
         ) : (
           <div className="mx-auto grid aspect-[8.5/11] w-full max-w-[610px] place-items-center border border-border bg-card/40 shadow-2xl shadow-black/40">
             <div className="max-w-xs text-center">
-              <FileWarning className="mx-auto size-6 text-muted-foreground" />
+              <IconFileAlert className="mx-auto size-6 text-muted-foreground" />
               <p className="mt-3 text-sm font-medium text-foreground">No compiled preview yet</p>
               <p className="mt-1 text-xs leading-5 text-muted-foreground">
                 Compile your resume into a clean, text-based PDF through the TeX Live service.
@@ -201,7 +227,7 @@ export function PdfPreview({ compact = false }: { compact?: boolean }) {
                   onClick={() => setPage((value) => value - 1)}
                   aria-label="Previous page"
                 >
-                  <ChevronLeft />
+                  <IconChevronLeft />
                 </Button>
                 <span className="font-mono text-[10px] text-muted-foreground">
                   {page} / {pages}
@@ -213,7 +239,7 @@ export function PdfPreview({ compact = false }: { compact?: boolean }) {
                   onClick={() => setPage((value) => value + 1)}
                   aria-label="Next page"
                 >
-                  <ChevronRight />
+                  <IconChevronRight />
                 </Button>
               </div>
               <div className="rounded-none border border-amber-500/30 bg-amber-500/10 px-2.5 py-1.5 text-[11px] leading-4 text-amber-300">
@@ -243,7 +269,7 @@ export function PdfPreview({ compact = false }: { compact?: boolean }) {
 }
 
 function PreviewMessage({ label }: { label: string }) {
-  return <div className="grid h-[720px] w-[556px] place-items-center border border-border bg-card/40 text-xs text-muted-foreground">{label}</div>;
+  return <div className="grid h-[720px] w-full max-w-[556px] place-items-center border border-border bg-card/40 text-xs text-muted-foreground p-4">{label}</div>;
 }
 
 function BlobPdf({

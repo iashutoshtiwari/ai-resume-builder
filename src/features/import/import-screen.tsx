@@ -28,19 +28,27 @@ import {
 import { useWorkspaceStore } from "@/store/workspace-store";
 import Link from "next/link";
 import {
-  ArrowRight,
-  ArrowUpRight,
-  Check,
-  CircleDashed,
-  FileText,
-  FileType,
-  FolderOpen,
-  LockKeyhole,
-  RotateCcw,
-  ShieldCheck,
-  Sparkles,
-  Upload,
-} from "lucide-react";
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import {
+  IconArrowRight,
+  IconArrowUpRight,
+  IconCheck,
+  IconCircleDashed,
+  IconFileCode,
+  IconFileText,
+  IconFolderOpen,
+  IconLock,
+  IconMenu2,
+  IconRotate2,
+  IconShieldCheck,
+  IconSparkles,
+  IconUpload,
+} from "@tabler/icons-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -175,7 +183,11 @@ export function ImportScreen({
       }
       setSource(extracted.text);
       setDetectedFormat(extracted.format);
-      await parseResumeContent(extracted.text, extracted.format);
+      toast.success(
+        `Extracted text from "${file.name}". Review below and click "Parse & Structure Resume".`,
+      );
+      setBusy(false);
+      setLoadingStep("");
     } catch (error) {
       toast.error(
         error instanceof Error
@@ -315,7 +327,7 @@ export function ImportScreen({
             <div className="flex items-center gap-2">
               <AiProviderSwitch />
               <Badge variant="outline" className="gap-1.5">
-                <Check className="size-3 text-emerald-500" />{" "}
+                <IconCheck className="size-3 text-emerald-500" />{" "}
                 {result.confidence} confidence
               </Badge>
             </div>
@@ -484,7 +496,7 @@ export function ImportScreen({
                                 : "border-muted-foreground/40"
                             }`}
                           >
-                            {isSelected && <Check className="size-3" />}
+                            {isSelected && <IconCheck className="size-3" />}
                           </div>
                           <span>{sec.label}</span>
                         </div>
@@ -566,14 +578,14 @@ export function ImportScreen({
                 >
                   {isBuilding ? (
                     <>
-                      <CircleDashed className="animate-spin" /> Building resume…
+                      <IconCircleDashed className="animate-spin" /> Building resume…
                     </>
                   ) : (
                     <>
                       <span className="flex items-center gap-1.5">
-                        <Sparkles className="size-4" /> Build My Resume
+                        <IconSparkles className="size-4" /> Build My Resume
                       </span>
-                      <ArrowRight className="size-4" />
+                      <IconArrowRight className="size-4" />
                     </>
                   )}
                 </Button>
@@ -637,32 +649,59 @@ export function ImportScreen({
                 rel="noreferrer"
                 className="inline-flex items-center gap-1 transition-colors hover:text-foreground"
               >
-                Open Source <ArrowUpRight className="size-3" />
+                Open Source <IconArrowUpRight className="size-3" />
               </a>
             </nav>
           </div>
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-1.5 sm:gap-2.5">
             <AiProviderSwitch />
-            <Button
-              size="sm"
-              onClick={() => {
-                document.getElementById("upload-resume")?.scrollIntoView({ behavior: "smooth" });
-                inputRef.current?.focus();
-              }}
-              className="text-xs"
-            >
-              Build Your Resume
-            </Button>
+            {/* Mobile Navigation Drawer */}
+            <div className="md:hidden">
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button size="icon-sm" variant="ghost" className="size-8 touch-manipulation" aria-label="Open menu">
+                    <IconMenu2 className="size-4" />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="right" className="w-64 p-0">
+                  <SheetHeader className="border-b border-border p-4">
+                    <SheetTitle className="text-xs font-semibold">ArqeloCV Navigation</SheetTitle>
+                  </SheetHeader>
+                  <nav className="flex flex-col p-3 space-y-1 text-sm">
+                    <a href="#how-it-works" className="rounded-none px-3 py-2 text-muted-foreground hover:bg-muted hover:text-foreground">
+                      How it works
+                    </a>
+                    <a href="#features" className="rounded-none px-3 py-2 text-muted-foreground hover:bg-muted hover:text-foreground">
+                      Features
+                    </a>
+                    <a href="#trust" className="rounded-none px-3 py-2 text-muted-foreground hover:bg-muted hover:text-foreground">
+                      Trust
+                    </a>
+                    <a href="#faq" className="rounded-none px-3 py-2 text-muted-foreground hover:bg-muted hover:text-foreground">
+                      FAQ
+                    </a>
+                    <a
+                      href={siteConfig.githubUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex items-center gap-1.5 rounded-none px-3 py-2 text-muted-foreground hover:bg-muted hover:text-foreground"
+                    >
+                      Open Source <IconArrowUpRight className="size-3.5" />
+                    </a>
+                  </nav>
+                </SheetContent>
+              </Sheet>
+            </div>
           </div>
         </div>
       </header>
 
-      <div className="mx-auto grid max-w-7xl gap-8 px-4 pb-12 pt-6 sm:px-6 sm:pt-10 lg:grid-cols-[0.95fr_1.05fr] lg:items-start lg:gap-12 lg:pt-[5vh]">
-        <section className="max-w-xl">
+      <div className="mx-auto grid max-w-7xl 3xl:max-w-[1680px] gap-8 px-4 pb-12 pt-6 sm:px-6 sm:pt-10 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] lg:items-start lg:gap-12 lg:pt-[5vh]">
+        <section className="max-w-xl 3xl:max-w-2xl">
           <p className="font-mono text-xs uppercase tracking-[0.2em] text-primary">
             ArqeloCV
           </p>
-          <h1 className="mt-3 text-4xl font-semibold leading-[1.08] tracking-tight sm:text-5xl lg:text-6xl">
+          <h1 className="mt-3 text-4xl font-semibold leading-[1.08] tracking-tight sm:text-5xl lg:text-6xl 3xl:text-7xl">
             AI Resume Builder for Software Engineers
           </h1>
           <p className="mt-4 max-w-md text-sm leading-relaxed text-muted-foreground sm:text-base">
@@ -680,7 +719,7 @@ export function ImportScreen({
               }}
               className="text-xs"
             >
-              Build Your Resume <ArrowRight className="ml-1.5 size-3.5" />
+              Build Your Resume <IconArrowRight className="ml-1.5 size-3.5" />
             </Button>
             <Button
               variant="outline"
@@ -694,28 +733,28 @@ export function ImportScreen({
                 rel="noreferrer"
                 className="inline-flex items-center gap-1.5"
               >
-                View on GitHub <ArrowUpRight className="size-3.5" />
+                View on GitHub <IconArrowUpRight className="size-3.5" />
               </a>
             </Button>
           </div>
 
           <div className="mt-8 grid max-w-lg grid-cols-1 gap-px border-y border-border bg-border sm:grid-cols-3">
             <div className="bg-background px-3.5 py-4">
-              <ShieldCheck className="size-4 text-primary" />
+              <IconShieldCheck className="size-4 text-primary" />
               <p className="mt-2 text-xs font-medium">Grounded in Experience</p>
               <p className="mt-1 text-[11px] leading-tight text-muted-foreground">
                 Emphasize real skills without inventing experience
               </p>
             </div>
             <div className="bg-background px-3.5 py-4">
-              <LockKeyhole className="size-4 text-primary" />
+              <IconLock className="size-4 text-primary" />
               <p className="mt-2 text-xs font-medium">ATS-Friendly LaTeX</p>
               <p className="mt-1 text-[11px] leading-tight text-muted-foreground">
                 Standard single-column vector PDF output
               </p>
             </div>
             <div className="bg-background px-3.5 py-4">
-              <Sparkles className="size-4 text-primary" />
+              <IconSparkles className="size-4 text-primary" />
               <p className="mt-2 text-xs font-medium">Targeted Job Match</p>
               <p className="mt-1 text-[11px] leading-tight text-muted-foreground">
                 Align accomplishments directly to the role
@@ -724,7 +763,7 @@ export function ImportScreen({
           </div>
         </section>
 
-        <section id="upload-resume" className="border border-border bg-card shadow-2xl shadow-black/20">
+        <section id="upload-resume" className="min-w-0 border border-border bg-card shadow-2xl shadow-black/20">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b border-border px-5 py-4">
             <div>
               <h2 className="text-sm font-medium">Upload your resume</h2>
@@ -763,10 +802,10 @@ export function ImportScreen({
                   variant="ghost"
                   onClick={() => void resetWorkspace()}
                 >
-                  <RotateCcw className="size-3.5" /> Reset
+                  <IconRotate2 className="size-3.5" /> Reset
                 </Button>
                 <Button size="sm" onClick={() => router.push("/workspace")}>
-                  Open <ArrowRight className="size-3.5" />
+                  Open <IconArrowRight className="size-3.5" />
                 </Button>
               </div>
             </div>
@@ -814,13 +853,13 @@ export function ImportScreen({
             >
               <div className="flex items-center justify-center gap-2">
                 <span className="grid size-10 place-items-center border border-border bg-card group-hover:border-primary/50">
-                  <Upload className="size-4 text-primary" />
+                  <IconUpload className="size-4 text-primary" />
                 </span>
                 <span className="grid size-10 place-items-center border border-border bg-card group-hover:border-primary/50">
-                  <FileText className="size-4 text-muted-foreground" />
+                  <IconFileText className="size-4 text-muted-foreground" />
                 </span>
                 <span className="grid size-10 place-items-center border border-border bg-card group-hover:border-primary/50">
-                  <FileType className="size-4 text-muted-foreground" />
+                  <IconFileCode className="size-4 text-muted-foreground" />
                 </span>
               </div>
               <span className="mt-4 text-sm font-medium">
@@ -846,23 +885,26 @@ export function ImportScreen({
               className="h-40 [field-sizing:fixed] resize-none overflow-y-auto bg-background/60 font-mono text-xs leading-relaxed"
             />
 
-            <div className="flex flex-col gap-2 sm:flex-row">
+            <div className="flex min-w-0 flex-col gap-2 sm:flex-row">
               <Button
-                className="flex-1"
+                className="h-10 w-full min-w-0 font-semibold touch-manipulation sm:w-auto sm:flex-1"
                 disabled={busy || source.trim().length < 30}
                 onClick={() => void parseResumeContent()}
               >
-                {busy
-                  ? loadingStep || "Structuring…"
-                  : "Parse & Structure Resume"}
-                <ArrowRight className="size-4 ml-1" />
+                <span className="min-w-0 truncate">
+                  {busy
+                    ? loadingStep || "Structuring…"
+                    : "Parse & Structure Resume"}
+                </span>
+                <IconArrowRight className="ml-1 size-4 shrink-0" />
               </Button>
               <Button
                 variant="outline"
+                className="h-10 w-full sm:w-auto touch-manipulation"
                 onClick={() => void parseResumeContent(canonicalLatex, "latex")}
                 disabled={busy}
               >
-                <FolderOpen className="size-4 mr-1" /> Load Example Template
+                <IconFolderOpen className="size-4 mr-1" /> Load Example Template
               </Button>
             </div>
 

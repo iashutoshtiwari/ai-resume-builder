@@ -7,6 +7,7 @@ import {
   buildTargetedRepairPrompt,
   DEFAULT_AI_SYSTEM_PROMPT,
 } from "@/lib/ai/prompt-builder";
+import { buildResumePrompt, fullTailorPrompt } from "@/lib/ai/prompts";
 
 describe("Structured Prompt Builder", () => {
   it("builds a well-formed prompt tuple with default system prompt", () => {
@@ -24,6 +25,7 @@ describe("Structured Prompt Builder", () => {
     });
 
     expect(system).toBe(DEFAULT_AI_SYSTEM_PROMPT);
+    expect(system).toMatch(/Never emit LaTeX/i);
     expect(user).toContain("<task_objective>\nExtract resume data.\n</task_objective>");
     expect(user).toContain("<rules>\n- Rule 1: Be truthful.\n- Rule 2: Stable IDs.\n</rules>");
     expect(user).toContain('<reference_guidance format="json">\n{"version":"1"}\n</reference_guidance>');
@@ -43,5 +45,14 @@ describe("Structured Prompt Builder", () => {
     // Should be truncated to at most 400 chars, not full 5000!
     expect(user).toContain("<failing_snippet>");
     expect(user.length).toBeLessThan(1200);
+  });
+
+  it("keeps resume generation and tailoring on the structured-content side of the boundary", () => {
+    const build = buildResumePrompt("{}", "[]", "{}").join("\n");
+    const tailor = fullTailorPrompt("{}", "{}", "{}", "revision-1", "{}").join("\n");
+    expect(build).toMatch(/structured Resume JSON only/i);
+    expect(build).toMatch(/Do not emit LaTeX/i);
+    expect(tailor).toMatch(/structured resume content only/i);
+    expect(tailor).toMatch(/never recommend formatting compression/i);
   });
 });

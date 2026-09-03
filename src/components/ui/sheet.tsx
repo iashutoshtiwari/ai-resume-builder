@@ -5,7 +5,7 @@ import { Dialog as SheetPrimitive } from "radix-ui"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { XIcon } from "lucide-react"
+import { IconX } from "@tabler/icons-react"
 
 function Sheet({ ...props }: React.ComponentProps<typeof SheetPrimitive.Root>) {
   return <SheetPrimitive.Root data-slot="sheet" {...props} />
@@ -72,11 +72,10 @@ function SheetContent({
           <SheetPrimitive.Close data-slot="sheet-close" asChild>
             <Button
               variant="ghost"
-              className="absolute top-4 right-4 bg-secondary"
+              className="absolute top-2.5 right-3 size-8 rounded-none text-muted-foreground hover:bg-muted hover:text-foreground touch-manipulation"
               size="icon-sm"
             >
-              <XIcon
-              />
+              <IconX className="size-4" />
               <span className="sr-only">Close</span>
             </Button>
           </SheetPrimitive.Close>

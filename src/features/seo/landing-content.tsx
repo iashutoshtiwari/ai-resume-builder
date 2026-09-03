@@ -1,14 +1,12 @@
 import {
-  ArrowRight,
-  ArrowUpRight,
-  CheckCircle2,
-  FileCheck2,
-  FileCode2,
-  HelpCircle,
-  ShieldCheck,
-  Sparkles,
-  Upload,
-} from "lucide-react";
+  IconArrowRight,
+  IconArrowUpRight,
+  IconFileCode,
+  IconHelpCircle,
+  IconShieldCheck,
+  IconSparkles,
+  IconUpload,
+} from "@tabler/icons-react";
 import { Button } from "@/components/ui/button";
 import { siteConfig } from "@/config/site";
 
@@ -19,25 +17,25 @@ export function LandingContent({
 }) {
   const capabilities = [
     {
-      icon: Upload,
+      icon: IconUpload,
       title: "Build from what you already have",
       description:
         "Upload your PDF, DOCX, or LaTeX resume, or paste your existing content. ArqeloCV structures it into an engineering-focused resume.",
     },
     {
-      icon: Sparkles,
+      icon: IconSparkles,
       title: "Tailor for a specific job",
       description:
         "Paste a job description to see how your experience matches and generate a more relevant version of your resume.",
     },
     {
-      icon: ShieldCheck,
+      icon: IconShieldCheck,
       title: "Grounded in your experience",
       description:
         "ArqeloCV can emphasize relevant skills and projects without adding unsupported technologies, responsibilities, or achievements.",
     },
     {
-      icon: FileCode2,
+      icon: IconFileCode,
       title: "Export a professional resume",
       description:
         "Generate a clean, ATS-friendly resume and export it as PDF using deterministic single-column LaTeX compilation.",
@@ -47,53 +45,49 @@ export function LandingContent({
   const steps = [
     {
       step: "1",
-      title: "Import",
-      description: "Upload your existing resume or paste its content.",
+      title: "Import your current resume",
+      description:
+        "Upload a PDF, Word document, or LaTeX file. ArqeloCV extracts structured sections without altering your career history.",
     },
     {
       step: "2",
-      title: "Build",
+      title: "Tailor against a target role",
       description:
-        "ArqeloCV structures and improves your resume for software engineering roles.",
+        "Provide a job description. The AI analyzes requirements, suggests evidence-grounded revisions, and computes a job match score.",
     },
     {
       step: "3",
-      title: "Tailor",
+      title: "Compile and export",
       description:
-        "Add a job description to understand your match and generate a targeted version.",
+        "Review every change atomically with word diffs. Compile with pdfLaTeX via our dedicated microservice and download vector PDF or LaTeX source.",
     },
   ];
 
   const faqs = [
     {
-      question: "What is ArqeloCV?",
+      question: "How does the AI ensure it doesn't invent experience?",
       answer:
-        "ArqeloCV is an AI resume builder designed primarily for software engineers. It structures your existing experience, scores technical quality, and tailors your resume to target job descriptions while preserving factual accuracy.",
+        "The system prompt strictly instructs the model to only use facts present in your uploaded resume. Every suggested change is presented as an atomic diff that you can accept, reject, or edit before applying.",
     },
     {
-      question: "Can ArqeloCV tailor my resume to a job description?",
+      question: "What LaTeX compiler is used?",
       answer:
-        "Yes. Paste any target job description to evaluate requirements, identify alignment gaps, and generate tailored revisions emphasizing your relevant supported experience.",
+        "PDF compilation uses a dedicated microservice running TeX Live with pdfLaTeX. If the microservice is unreachable, you can always export the generated LaTeX source (.tex) and compile locally.",
     },
     {
-      question: "Will ArqeloCV add skills I don't have?",
+      question: "Can I edit the LaTeX source directly?",
       answer:
-        "No. ArqeloCV enforces strict factuality guardrails. Suggestions rewrite and highlight verified experience from your original resume. Missing skills remain missing until you explicitly supply evidence.",
+        "Yes. The workspace provides a Monaco-powered LaTeX editor tab. You can make direct edits and recompile, or switch back to structured editing.",
     },
     {
-      question: "What resume formats can I import?",
+      question: "Where is my data stored?",
       answer:
-        "You can import resumes in PDF, DOCX (Microsoft Word), LaTeX (.tex), or plain text. You can also start immediately with our pre-configured sample software engineer resume.",
+        "Your workspace is stored entirely in your browser using IndexedDB. Nothing is persisted to a server database. AI requests are processed statelessly without retaining your resume data.",
     },
     {
-      question: "Is ArqeloCV ATS-friendly?",
+      question: "What file formats are accepted for import?",
       answer:
-        "Yes. Resumes are rendered with clean, single-column typesetting and compiled into standard text-based vector PDFs via TeX Live, ensuring reliable parsing across applicant tracking systems.",
-    },
-    {
-      question: "Who is ArqeloCV for?",
-      answer:
-        "ArqeloCV is built primarily for software engineers, developers, students, and technical candidates applying for software roles.",
+        "You can upload PDF (.pdf), Word (.docx), LaTeX (.tex), or plain text (.txt). You can also paste text directly or start from our canonical software engineer template.",
     },
   ];
 
@@ -106,234 +100,12 @@ export function LandingContent({
 
   return (
     <div className="border-t border-border bg-background text-foreground">
-      {/* PRODUCT VISUAL / WORKSPACE PREVIEW */}
-      <section
-        id="preview"
-        className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:py-24"
-      >
-        <div className="text-center">
-          <p className="font-mono text-xs uppercase tracking-[0.2em] text-primary">
-            Workspace Preview
-          </p>
-          <h2 className="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl lg:text-4xl">
-            A focused review desk for engineering resumes
-          </h2>
-          <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
-            Inspect structured sections, evaluate job match alignment, and
-            compile clean LaTeX PDFs with deterministic precision.
-          </p>
-        </div>
-
-        <div className="mt-10 overflow-hidden border border-border bg-card shadow-2xl">
-          {/* Simulated Workspace Window Bar */}
-          <div className="flex items-center justify-between border-b border-border bg-background/80 px-4 py-2.5">
-            <div className="flex items-center gap-2 min-w-0">
-              <div className="flex items-center gap-1.5 shrink-0">
-                <span className="size-2.5 rounded-full bg-zinc-700" />
-                <span className="size-2.5 rounded-full bg-zinc-700" />
-                <span className="size-2.5 rounded-full bg-zinc-700" />
-              </div>
-              <span className="ml-2 truncate font-mono text-[11px] text-muted-foreground">
-                ArqeloCV Workspace · Staff Software Engineer
-              </span>
-            </div>
-            <div className="flex shrink-0 items-center gap-2">
-              <span className="inline-flex items-center gap-1 border border-primary/40 bg-primary/10 px-2 py-0.5 font-mono text-[10px] text-primary">
-                <CheckCircle2 className="size-3" /> Grounded in evidence
-              </span>
-              <span className="hidden sm:inline-flex border border-border px-2 py-0.5 font-mono text-[10px] text-muted-foreground">
-                pdfLaTeX Engine
-              </span>
-            </div>
-          </div>
-
-          {/* Workspace Multi-Pane Representation */}
-          <div className="grid grid-cols-1 divide-y divide-border lg:grid-cols-12 lg:divide-x lg:divide-y-0">
-            {/* Left Column: Quality & Match Metrics */}
-            <div className="p-5 lg:col-span-3 space-y-5 bg-background/40">
-              <div>
-                <p className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-                  ATS & Quality Metrics
-                </p>
-                <div className="mt-3 space-y-3">
-                  <div className="border border-border bg-card p-3">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-muted-foreground">
-                        ATS Compatibility
-                      </span>
-                      <span className="font-mono font-semibold text-emerald-400">
-                        98 / 100
-                      </span>
-                    </div>
-                    <p className="mt-1 text-[11px] text-muted-foreground leading-snug">
-                      Clean single-column glyphs; standard margins.
-                    </p>
-                  </div>
-                  <div className="border border-border bg-card p-3">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-muted-foreground">
-                        Job Description Match
-                      </span>
-                      <span className="font-mono font-semibold text-emerald-400">
-                        86%
-                      </span>
-                    </div>
-                    <p className="mt-1 text-[11px] text-muted-foreground leading-snug">
-                      Strong overlap in distributed systems and Go.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <p className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-                  Structured Sections
-                </p>
-                <ul className="mt-2 space-y-1 font-mono text-xs text-muted-foreground">
-                  <li className="flex items-center justify-between border-l-2 border-primary bg-primary/5 px-2 py-1 text-foreground">
-                    <span>Work Experience</span>
-                    <span className="text-[10px] text-primary">4 roles</span>
-                  </li>
-                  <li className="flex items-center justify-between px-2 py-1">
-                    <span>Engineering Projects</span>
-                    <span className="text-[10px]">3 projects</span>
-                  </li>
-                  <li className="flex items-center justify-between px-2 py-1">
-                    <span>Technical Skills</span>
-                    <span className="text-[10px]">18 items</span>
-                  </li>
-                  <li className="flex items-center justify-between px-2 py-1">
-                    <span>Education</span>
-                    <span className="text-[10px]">B.Tech CS</span>
-                  </li>
-                </ul>
-              </div>
-            </div>
-
-            {/* Center Column: Structured Bullet Editor */}
-            <div className="p-5 lg:col-span-5 space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-semibold">
-                    Work Experience · Staff Engineer
-                  </h3>
-                  <p className="text-xs text-muted-foreground">
-                    Infrastructure & Distributed Systems
-                  </p>
-                </div>
-                <span className="border border-primary/40 bg-primary/10 px-2 py-0.5 text-[10px] text-primary">
-                  Atomic Diff
-                </span>
-              </div>
-
-              <div className="space-y-3">
-                <div className="border border-border bg-background p-3 text-xs leading-relaxed">
-                  <p className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-                    Original Bullet from Resume
-                  </p>
-                  <p className="mt-1.5 text-muted-foreground">
-                    &quot;Built distributed event ingestion pipeline for
-                    real-time transactions.&quot;
-                  </p>
-                </div>
-
-                <div className="border border-primary/50 bg-primary/5 p-3 text-xs leading-relaxed">
-                  <div className="flex items-center justify-between">
-                    <p className="font-mono text-[10px] uppercase tracking-wider text-primary">
-                      Tailored Revision (Factuality Grounded)
-                    </p>
-                    <span className="inline-flex items-center gap-1 text-[10px] text-emerald-400">
-                      <CheckCircle2 className="size-3" /> Grounded in source
-                    </span>
-                  </div>
-                  <p className="mt-1.5 text-foreground">
-                    &quot;Engineered distributed event ingestion pipeline using
-                    Go and Kafka, sustaining 45,000 events/sec with sub-50ms
-                    latency and reducing database contention by 32%.&quot;
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-2 pt-1 text-[11px] text-muted-foreground">
-                  <FileCheck2 className="size-3.5 text-primary" />
-                  <span>
-                    No invented frameworks or unearned metrics introduced.
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Right Column: PDF Preview */}
-            <div className="p-5 lg:col-span-4 bg-zinc-950/60 flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between border-b border-border/80 pb-2">
-                  <p className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-                    Deterministic LaTeX Preview
-                  </p>
-                  <span className="font-mono text-[10px] text-emerald-400">
-                    Vector PDF
-                  </span>
-                </div>
-
-                {/* Paper Representation */}
-                <div className="mt-3 rounded-none border border-zinc-200 bg-white p-4 text-zinc-900 shadow-md">
-                  <div className="text-center">
-                    <h4 className="font-serif text-sm font-bold tracking-wide uppercase">
-                      Alex Morgan
-                    </h4>
-                    <p className="text-[9px] text-zinc-600">
-                      alex.morgan@email.com · github.com/alexm · San Francisco,
-                      CA
-                    </p>
-                  </div>
-                  <div className="my-2 border-b border-zinc-400" />
-                  <div>
-                    <h5 className="font-serif text-[10px] font-bold tracking-wider uppercase text-zinc-800">
-                      Experience
-                    </h5>
-                    <div className="mt-1 text-[9px] text-zinc-700">
-                      <div className="flex justify-between font-semibold">
-                        <span>Staff Infrastructure Engineer — CloudCorp</span>
-                        <span>2021 – Present</span>
-                      </div>
-                      <ul className="mt-1 list-disc pl-3 space-y-0.5 text-[8.5px] leading-tight">
-                        <li>
-                          Engineered distributed event ingestion pipeline using
-                          Go and Kafka.
-                        </li>
-                        <li>
-                          Reduced database contention by 32% under peak holiday
-                          load.
-                        </li>
-                      </ul>
-                    </div>
-                  </div>
-                  <div className="my-2 border-b border-zinc-400" />
-                  <div>
-                    <h5 className="font-serif text-[10px] font-bold tracking-wider uppercase text-zinc-800">
-                      Technical Skills
-                    </h5>
-                    <p className="mt-1 text-[8.5px] text-zinc-700">
-                      <strong className="font-semibold">Languages:</strong> Go,
-                      TypeScript, Python, SQL, LaTeX
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <p className="mt-3 text-center font-mono text-[10px] text-muted-foreground">
-                Compiled via dedicated Docker TeX Live sandbox
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* KEY CAPABILITIES */}
       <section
         id="features"
         className="border-t border-border bg-card/40 py-16 lg:py-24"
       >
-        <div className="mx-auto max-w-7xl px-4 sm:px-6">
+        <div className="mx-auto max-w-7xl 3xl:max-w-[1680px] px-4 sm:px-6">
           <div className="max-w-2xl">
             <p className="font-mono text-xs uppercase tracking-[0.2em] text-primary">
               Key Capabilities
@@ -376,7 +148,7 @@ export function LandingContent({
         id="how-it-works"
         className="border-t border-border py-16 lg:py-24"
       >
-        <div className="mx-auto max-w-7xl px-4 sm:px-6">
+        <div className="mx-auto max-w-7xl 3xl:max-w-[1680px] px-4 sm:px-6">
           <div className="max-w-2xl">
             <p className="font-mono text-xs uppercase tracking-[0.2em] text-primary">
               How It Works
@@ -418,7 +190,7 @@ export function LandingContent({
       >
         <div className="mx-auto max-w-4xl px-4 text-center sm:px-6">
           <div className="inline-flex size-12 items-center justify-center border border-primary/40 bg-primary/10 text-primary">
-            <ShieldCheck className="size-6" />
+            <IconShieldCheck className="size-6" />
           </div>
           <h2 className="mt-5 text-2xl font-semibold tracking-tight sm:text-3xl lg:text-4xl">
             Tailored without making things up.
@@ -486,7 +258,7 @@ export function LandingContent({
               >
                 <summary className="flex cursor-pointer items-center justify-between text-sm font-semibold text-foreground focus:outline-none">
                   <span className="flex items-center gap-3">
-                    <HelpCircle className="size-4 text-primary shrink-0" />
+                    <IconHelpCircle className="size-4 text-primary shrink-0" />
                     {faq.question}
                   </span>
                   <span className="ml-4 font-mono text-xs text-muted-foreground transition-transform group-open:rotate-45">
@@ -514,7 +286,7 @@ export function LandingContent({
           </p>
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Button size="lg" onClick={scrollToUpload} className="px-6 text-sm">
-              Build Your Resume <ArrowRight className="ml-2 size-4" />
+              Build Your Resume <IconArrowRight className="ml-2 size-4" />
             </Button>
             {onStartSample && (
               <Button
@@ -532,7 +304,7 @@ export function LandingContent({
 
       {/* SEMANTIC FOOTER */}
       <footer className="border-t border-border bg-background px-4 py-10 sm:px-6">
-        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-6 sm:flex-row">
+        <div className="mx-auto flex max-w-7xl 3xl:max-w-[1680px] flex-col items-center justify-between gap-6 sm:flex-row">
           <div className="flex items-center gap-3">
             <div className="grid size-7 place-items-center border border-primary/40 bg-primary/10 text-xs font-black text-primary">
               A
@@ -578,7 +350,7 @@ export function LandingContent({
               rel="noreferrer"
               className="inline-flex items-center gap-1 hover:text-foreground hover:underline underline-offset-4"
             >
-              GitHub <ArrowUpRight className="size-3" />
+              GitHub <IconArrowUpRight className="size-3" />
             </a>
           </div>
 

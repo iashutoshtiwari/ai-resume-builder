@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, DM_Sans, Inter } from "next/font/google";
 import { Toaster } from "sonner";
 import { AppProviders } from "@/components/app-providers";
@@ -7,6 +7,13 @@ import "./globals.css";
 import { cn } from "@/lib/utils";
 
 import { siteConfig } from "@/config/site";
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#09090b",
+};
 
 const dmSansHeading = DM_Sans({subsets:['latin'],variable:'--font-heading'});
 const inter = Inter({subsets:['latin'],variable:'--font-sans'});

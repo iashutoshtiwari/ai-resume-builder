@@ -55,10 +55,9 @@ export function auditResumeGuidance(input: AuditInput): GuidanceFinding[] {
     ? finding("er-single-column", "review", "Manual source is unverified", "The ATS-safe format audit cannot guarantee the structure of a manual LaTeX override.")
     : finding("er-single-column", "passed", "Canonical single-column structure", "Generated source uses the supported single-column renderer."));
 
-  const safeFormat = input.presentation.margin >= 0.4 && input.presentation.fontSize >= 10.5;
-  findings.push(safeFormat
-    ? finding("er-readable-type", "passed", "Typography stays inside guardrails", `Text is ${input.presentation.fontSize}pt with ${input.presentation.margin}-inch margins.`)
-    : finding("er-readable-type", "action", "Restore readable formatting", "Use at least 10.5pt type and 0.4-inch margins."));
+  findings.push(input.manualLatex
+    ? finding("er-readable-type", "review", "Manual typography is unverified", "Generated resumes use locked 11pt XCharter type and 0.5-inch margins; manual source may differ.")
+    : finding("er-readable-type", "passed", "Canonical typography is locked", "Generated source uses 11pt XCharter type and 0.5-inch margins."));
 
   if (!input.compiledCurrent || input.pageCount === null) {
     findings.push(finding("er-page-length", "review", "Compile to verify page length", "Page-length guidance requires a current successful PDF compile."));
@@ -68,7 +67,16 @@ export function auditResumeGuidance(input: AuditInput): GuidanceFinding[] {
     findings.push(finding("er-page-length", "passed", "Resume fits one page", "The current compiled PDF is one page."));
   }
 
-  const sections = input.presentation.sections;
+  const sectionHasContent: Record<(typeof input.presentation.sections)[number], boolean> = {
+    summary: Boolean(input.resume.summary?.trim()),
+    skills: input.resume.skills.length > 0,
+    experience: input.resume.experience.length > 0,
+    projects: input.resume.projects.length > 0,
+    certifications: (input.resume.certifications?.length ?? 0) > 0,
+    achievements: (input.resume.achievements?.length ?? 0) > 0,
+    education: input.resume.education.length > 0,
+  };
+  const sections = input.presentation.sections.filter((section) => sectionHasContent[section]);
   const sectionOrderLooksRelevant = input.resume.experience.length > 0
     ? sections[0] === "experience" || sections[0] === "skills"
     : sections[0] === "education" || sections[0] === "projects";

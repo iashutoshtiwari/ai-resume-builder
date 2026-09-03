@@ -2,7 +2,13 @@
 
 /* eslint-disable react-hooks/refs -- dnd-kit exposes callback refs and transform state through useSortable. */
 
-import { ArrowDown, ArrowUp, GripVertical, Plus, Trash2 } from "lucide-react";
+import {
+  IconArrowDown,
+  IconArrowUp,
+  IconGripVertical,
+  IconPlus,
+  IconTrash,
+} from "@tabler/icons-react";
 import { DndContext, KeyboardSensor, PointerSensor, closestCenter, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, arrayMove, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -26,7 +32,7 @@ function Field({ label, value, onChange, placeholder }: { label: string; value?:
 }
 
 function ConfirmDelete({ label, onDelete }: { label: string; onDelete: () => void }) {
-  return <AlertDialog><AlertDialogTrigger asChild><Button size="icon-sm" variant="ghost" aria-label={`Delete ${label}`}><Trash2 className="size-3.5" /></Button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Delete {label}?</AlertDialogTitle><AlertDialogDescription>This removes the item and may make pending AI suggestions stale. You can still undo the edit during this session.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Keep it</AlertDialogCancel><AlertDialogAction onClick={onDelete}>Delete</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>;
+  return <AlertDialog><AlertDialogTrigger asChild><Button size="icon-sm" variant="ghost" aria-label={`Delete ${label}`}><IconTrash className="size-3.5" /></Button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Delete {label}?</AlertDialogTitle><AlertDialogDescription>This removes the item and may make pending AI suggestions stale. You can still undo the edit during this session.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Keep it</AlertDialogCancel><AlertDialogAction onClick={onDelete}>Delete</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>;
 }
 
 export function OverviewPanel() {
@@ -40,7 +46,7 @@ export function OverviewPanel() {
         title="Identity and contact"
         copy="Keep this factual. Structured edits regenerate the supported LaTeX source."
       />
-      <div className="space-y-5 p-5">
+      <div className="space-y-5 p-5 max-w-4xl">
         <ScoreCard resume={workspace.resume} />
         <div className="grid gap-5 sm:grid-cols-2">
           <div className="sm:col-span-2">
@@ -57,7 +63,7 @@ export function OverviewPanel() {
 }
 
 function BulletEditor({ value, index, count, onText, onMove, onDelete, dragHandle }: { value: string; index: number; count: number; onText: (value: string) => void; onMove: (direction: -1 | 1) => void; onDelete: () => void; dragHandle?: React.ReactNode }) {
-  return <div className="group grid grid-cols-[28px_1fr_auto] gap-2 border-t border-border py-3 first:border-t-0"><div className="flex flex-col items-center pt-2">{dragHandle}<span className="mt-1 font-mono text-[10px] text-muted-foreground">{String(index + 1).padStart(2, "0")}</span></div><Textarea value={value} onChange={(event) => onText(event.target.value)} className="min-h-20 resize-y border border-input bg-background/50 px-3 py-2 text-sm rounded-none focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring/40" aria-label={`Bullet ${index + 1}`} /><div className="flex flex-col"><Button size="icon-sm" variant="ghost" disabled={index === 0} onClick={() => onMove(-1)} aria-label={`Move bullet ${index + 1} up`}><ArrowUp className="size-3.5" /></Button><Button size="icon-sm" variant="ghost" disabled={index === count - 1} onClick={() => onMove(1)} aria-label={`Move bullet ${index + 1} down`}><ArrowDown className="size-3.5" /></Button><ConfirmDelete label={`bullet ${index + 1}`} onDelete={onDelete} /></div></div>;
+  return <div className="group grid grid-cols-[28px_1fr_auto] gap-2 border-t border-border py-3 first:border-t-0"><div className="flex flex-col items-center pt-2">{dragHandle}<span className="mt-1 font-mono text-[10px] text-muted-foreground">{String(index + 1).padStart(2, "0")}</span></div><Textarea value={value} onChange={(event) => onText(event.target.value)} className="min-h-20 resize-y border border-input bg-background/50 px-3 py-2 text-sm rounded-none focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring/40" aria-label={`Bullet ${index + 1}`} /><div className="flex flex-col"><Button size="icon-sm" variant="ghost" className="size-8 touch-manipulation" disabled={index === 0} onClick={() => onMove(-1)} aria-label={`Move bullet ${index + 1} up`}><IconArrowUp className="size-3.5" /></Button><Button size="icon-sm" variant="ghost" className="size-8 touch-manipulation" disabled={index === count - 1} onClick={() => onMove(1)} aria-label={`Move bullet ${index + 1} down`}><IconArrowDown className="size-3.5" /></Button><ConfirmDelete label={`bullet ${index + 1}`} onDelete={onDelete} /></div></div>;
 }
 
 function move<T>(items: T[], from: number, to: number): T[] {
@@ -69,7 +75,7 @@ function move<T>(items: T[], from: number, to: number): T[] {
 
 function SortableBullet({ bullet, index, bullets, onChange }: { bullet: TextItem; index: number; bullets: TextItem[]; onChange: (items: TextItem[]) => void }) {
   const sortable = useSortable({ id: bullet.id });
-  return <div ref={sortable.setNodeRef} style={{ transform: CSS.Transform.toString(sortable.transform), transition: sortable.transition, opacity: sortable.isDragging ? 0.55 : 1 }}><BulletEditor value={bullet.text} index={index} count={bullets.length} onText={(text) => onChange(bullets.map((item) => item.id === bullet.id ? { ...item, text } : item))} onMove={(direction) => onChange(move(bullets, index, index + direction))} onDelete={() => onChange(bullets.filter((item) => item.id !== bullet.id))} dragHandle={<button type="button" ref={sortable.setActivatorNodeRef} {...sortable.attributes} {...sortable.listeners} className="cursor-grab touch-none text-muted-foreground hover:text-foreground active:cursor-grabbing" aria-label={`Drag bullet ${index + 1}`}><GripVertical className="size-3.5" /></button>} /></div>;
+  return <div ref={sortable.setNodeRef} style={{ transform: CSS.Transform.toString(sortable.transform), transition: sortable.transition, opacity: sortable.isDragging ? 0.55 : 1 }}><BulletEditor value={bullet.text} index={index} count={bullets.length} onText={(text) => onChange(bullets.map((item) => item.id === bullet.id ? { ...item, text } : item))} onMove={(direction) => onChange(move(bullets, index, index + direction))} onDelete={() => onChange(bullets.filter((item) => item.id !== bullet.id))} dragHandle={<button type="button" ref={sortable.setActivatorNodeRef} {...sortable.attributes} {...sortable.listeners} className="cursor-grab touch-none p-1 -m-1 text-muted-foreground hover:text-foreground active:cursor-grabbing touch-manipulation" aria-label={`Drag bullet ${index + 1}`}><IconGripVertical className="size-3.5" /></button>} /></div>;
 }
 
 function SortableBulletList({ bullets, onChange }: { bullets: TextItem[]; onChange: (items: TextItem[]) => void }) {
@@ -82,25 +88,354 @@ export function ExperiencePanel() {
   const resume = useWorkspaceStore((state) => state.workspace!.resume);
   const update = useWorkspaceStore((state) => state.updateResume);
   const patchEntry = (id: string, patch: Partial<Resume["experience"][number]>) => update((current) => ({ ...current, experience: current.experience.map((item) => item.id === id ? { ...item, ...patch } : item) }));
-  return <div><SectionHeading eyebrow="Resume / Experience" title="Work experience" copy="Use concise, evidenced accomplishment statements. Reorder controls work with keyboard and pointer." /><div className="space-y-4 p-5">{resume.experience.map((entry) => <section key={entry.id} className="border border-border bg-card"><div className="flex items-center justify-between border-b border-border px-4 py-3"><p className="text-sm font-medium">{entry.role || "Untitled role"}</p><ConfirmDelete label={entry.role || "experience"} onDelete={() => update((current) => ({ ...current, experience: current.experience.filter((item) => item.id !== entry.id) }))} /></div><div className="grid gap-4 p-4 sm:grid-cols-2"><Field label="Role" value={entry.role} onChange={(role) => patchEntry(entry.id, { role })} /><Field label="Company" value={entry.company} onChange={(company) => patchEntry(entry.id, { company })} /><Field label="Start date" value={entry.startDate} onChange={(startDate) => patchEntry(entry.id, { startDate })} /><Field label="End date" value={entry.endDate} onChange={(endDate) => patchEntry(entry.id, { endDate })} /><div className="sm:col-span-2"><SortableBulletList bullets={entry.bullets} onChange={(bullets) => patchEntry(entry.id, { bullets })} /><Button variant="ghost" size="sm" onClick={() => patchEntry(entry.id, { bullets: [...entry.bullets, { id: createId("bullet"), text: "New accomplishment" }] })}><Plus /> Add bullet</Button></div></div></section>)}<Button variant="outline" onClick={() => update((current) => ({ ...current, experience: [...current.experience, { id: createId("experience"), role: "New role", company: "Company", startDate: "", endDate: "Present", bullets: [] }] }))}><Plus /> Add experience</Button></div></div>;
+  return <div><SectionHeading eyebrow="Resume / Experience" title="Work experience" copy="Use concise, evidenced accomplishment statements. Reorder controls work with keyboard and pointer." /><div className="space-y-4 p-5">{resume.experience.map((entry) => <section key={entry.id} className="border border-border bg-card"><div className="flex items-center justify-between border-b border-border px-4 py-3"><p className="text-sm font-medium">{entry.role || "Untitled role"}</p><ConfirmDelete label={entry.role || "experience"} onDelete={() => update((current) => ({ ...current, experience: current.experience.filter((item) => item.id !== entry.id) }))} /></div><div className="grid gap-4 p-4 sm:grid-cols-2"><Field label="Role" value={entry.role} onChange={(role) => patchEntry(entry.id, { role })} /><Field label="Company" value={entry.company} onChange={(company) => patchEntry(entry.id, { company })} /><Field label="Start date" value={entry.startDate} onChange={(startDate) => patchEntry(entry.id, { startDate })} /><Field label="End date" value={entry.endDate} onChange={(endDate) => patchEntry(entry.id, { endDate })} /><div className="sm:col-span-2"><SortableBulletList bullets={entry.bullets} onChange={(bullets) => patchEntry(entry.id, { bullets })} /><Button variant="ghost" size="sm" onClick={() => patchEntry(entry.id, { bullets: [...entry.bullets, { id: createId("bullet"), text: "New accomplishment" }] })}><IconPlus /> Add bullet</Button></div></div></section>)}<Button variant="outline" onClick={() => update((current) => ({ ...current, experience: [...current.experience, { id: createId("experience"), role: "New role", company: "Company", startDate: "", endDate: "Present", bullets: [] }] }))}><IconPlus /> Add experience</Button></div></div>;
 }
 
 export function ProjectsPanel() {
   const resume = useWorkspaceStore((state) => state.workspace!.resume);
   const update = useWorkspaceStore((state) => state.updateResume);
   const patchProject = (id: string, patch: Partial<Resume["projects"][number]>) => update((current) => ({ ...current, projects: current.projects.map((item) => item.id === id ? { ...item, ...patch } : item) }));
-  return <div><SectionHeading eyebrow="Resume / Projects" title="Selected projects" copy="List work that demonstrates relevant capability and real outcomes." /><div className="space-y-4 p-5">{resume.projects.map((project) => <section key={project.id} className="border border-border bg-card"><div className="flex items-center justify-between border-b border-border px-4 py-3"><p className="text-sm font-medium">{project.name}</p><ConfirmDelete label={project.name} onDelete={() => update((current) => ({ ...current, projects: current.projects.filter((item) => item.id !== project.id) }))} /></div><div className="space-y-4 p-4"><Field label="Project name" value={project.name} onChange={(name) => patchProject(project.id, { name })} /><Field label="Description" value={project.description} onChange={(description) => patchProject(project.id, { description })} /><SortableBulletList bullets={project.bullets} onChange={(bullets) => patchProject(project.id, { bullets })} /><Button variant="ghost" size="sm" onClick={() => patchProject(project.id, { bullets: [...project.bullets, { id: createId("bullet"), text: "New project outcome" }] })}><Plus /> Add bullet</Button></div></section>)}<Button variant="outline" onClick={() => update((current) => ({ ...current, projects: [...current.projects, { id: createId("project"), name: "New project", technologies: [], links: [], bullets: [] }] }))}><Plus /> Add project</Button></div></div>;
+  return <div><SectionHeading eyebrow="Resume / Projects" title="Selected projects" copy="List work that demonstrates relevant capability and real outcomes." /><div className="space-y-4 p-5">{resume.projects.map((project) => <section key={project.id} className="border border-border bg-card"><div className="flex items-center justify-between border-b border-border px-4 py-3"><p className="text-sm font-medium">{project.name}</p><ConfirmDelete label={project.name} onDelete={() => update((current) => ({ ...current, projects: current.projects.filter((item) => item.id !== project.id) }))} /></div><div className="space-y-4 p-4"><Field label="Project name" value={project.name} onChange={(name) => patchProject(project.id, { name })} /><Field label="Description" value={project.description} onChange={(description) => patchProject(project.id, { description })} /><SortableBulletList bullets={project.bullets} onChange={(bullets) => patchProject(project.id, { bullets })} /><Button variant="ghost" size="sm" onClick={() => patchProject(project.id, { bullets: [...project.bullets, { id: createId("bullet"), text: "New project outcome" }] })}><IconPlus /> Add bullet</Button></div></section>)}<Button variant="outline" onClick={() => update((current) => ({ ...current, projects: [...current.projects, { id: createId("project"), name: "New project", technologies: [], links: [], bullets: [] }] }))}><IconPlus /> Add project</Button></div></div>;
 }
 
 export function SkillsPanel() {
   const resume = useWorkspaceStore((state) => state.workspace!.resume);
   const update = useWorkspaceStore((state) => state.updateResume);
-  return <div><SectionHeading eyebrow="Resume / Skills" title="Skills inventory" copy="Keep only skills you can support in an interview." /><div className="space-y-4 p-5">{resume.skills.map((group) => <section key={group.id} className="border border-border p-4"><div className="flex gap-2"><Input value={group.name} aria-label="Skill group name" onChange={(event) => update((current) => ({ ...current, skills: current.skills.map((item) => item.id === group.id ? { ...item, name: event.target.value } : item) }))} /><ConfirmDelete label={group.name} onDelete={() => update((current) => ({ ...current, skills: current.skills.filter((item) => item.id !== group.id) }))} /></div><div className="mt-3 flex flex-wrap gap-2">{group.skills.map((skill, index) => <div key={skill.id} className="flex items-center border border-border bg-card"><Input value={skill.name} aria-label={`${group.name} skill ${index + 1}`} className="h-8 w-32 border-0 bg-transparent px-2.5" onChange={(event) => update((current) => ({ ...current, skills: current.skills.map((item) => item.id === group.id ? { ...item, skills: item.skills.map((entry) => entry.id === skill.id ? { ...entry, name: event.target.value } : entry) } : item) }))} /><Button size="icon-sm" variant="ghost" className="size-8" aria-label={`Remove ${skill.name}`} onClick={() => update((current) => ({ ...current, skills: current.skills.map((item) => item.id === group.id ? { ...item, skills: item.skills.filter((entry) => entry.id !== skill.id) } : item) }))}><Trash2 className="size-3.5" /></Button></div>)}<Button size="sm" variant="ghost" onClick={() => update((current) => ({ ...current, skills: current.skills.map((item) => item.id === group.id ? { ...item, skills: [...item.skills, { id: createId("skill"), name: "New skill" }] } : item) }))}><Plus /> Add</Button></div></section>)}<Button variant="outline" onClick={() => update((current) => ({ ...current, skills: [...current.skills, { id: createId("skill-group"), name: "New group", skills: [] }] }))}><Plus /> Add skill group</Button></div></div>;
+  return <div><SectionHeading eyebrow="Resume / Skills" title="Skills inventory" copy="Keep only skills you can support in an interview." /><div className="space-y-4 p-5">{resume.skills.map((group) => <section key={group.id} className="border border-border p-4"><div className="flex gap-2"><Input value={group.name} aria-label="Skill group name" onChange={(event) => update((current) => ({ ...current, skills: current.skills.map((item) => item.id === group.id ? { ...item, name: event.target.value } : item) }))} /><ConfirmDelete label={group.name} onDelete={() => update((current) => ({ ...current, skills: current.skills.filter((item) => item.id !== group.id) }))} /></div><div className="mt-3 flex flex-wrap gap-2">{group.skills.map((skill, index) => <div key={skill.id} className="flex items-center border border-border bg-card"><Input value={skill.name} aria-label={`${group.name} skill ${index + 1}`} className="h-8 w-32 border-0 bg-transparent px-2.5" onChange={(event) => update((current) => ({ ...current, skills: current.skills.map((item) => item.id === group.id ? { ...item, skills: item.skills.map((entry) => entry.id === skill.id ? { ...entry, name: event.target.value } : entry) } : item) }))} /><Button size="icon-sm" variant="ghost" className="size-8" aria-label={`Remove ${skill.name}`} onClick={() => update((current) => ({ ...current, skills: current.skills.map((item) => item.id === group.id ? { ...item, skills: item.skills.filter((entry) => entry.id !== skill.id) } : item) }))}><IconTrash className="size-3.5" /></Button></div>)}<Button size="sm" variant="ghost" onClick={() => update((current) => ({ ...current, skills: current.skills.map((item) => item.id === group.id ? { ...item, skills: [...item.skills, { id: createId("skill"), name: "New skill" }] } : item) }))}><IconPlus /> Add</Button></div></section>)}<Button variant="outline" onClick={() => update((current) => ({ ...current, skills: [...current.skills, { id: createId("skill-group"), name: "New group", skills: [] }] }))}><IconPlus /> Add skill group</Button></div></div>;
 }
 
 export function EducationPanel() {
-  const resume = useWorkspaceStore((state) => state.workspace!.resume);
+  const workspace = useWorkspaceStore((state) => state.workspace)!;
+  const resume = workspace.resume;
   const update = useWorkspaceStore((state) => state.updateResume);
-  const patchEntry = (id: string, patch: Partial<Resume["education"][number]>) => update((current) => ({ ...current, education: current.education.map((item) => item.id === id ? { ...item, ...patch } : item) }));
-  return <div><SectionHeading eyebrow="Resume / Education" title="Education" copy="Degrees, institutions, dates, and supporting detail." /><div className="space-y-4 p-5">{resume.education.map((entry) => <section key={entry.id} className="border border-border bg-card"><div className="flex justify-end border-b border-border px-3 py-2"><ConfirmDelete label={entry.institution} onDelete={() => update((current) => ({ ...current, education: current.education.filter((item) => item.id !== entry.id) }))} /></div><div className="grid gap-4 p-4 sm:grid-cols-2"><Field label="Institution" value={entry.institution} onChange={(institution) => patchEntry(entry.id, { institution })} /><Field label="Degree" value={entry.degree} onChange={(degree) => patchEntry(entry.id, { degree })} /><Field label="Field" value={entry.field} onChange={(field) => patchEntry(entry.id, { field })} /><Field label="End date" value={entry.endDate} onChange={(endDate) => patchEntry(entry.id, { endDate })} /></div></section>)}</div></div>;
+
+  const patchEntry = (id: string, patch: Partial<Resume["education"][number]>) =>
+    update((current) => ({
+      ...current,
+      education: current.education.map((item) => (item.id === id ? { ...item, ...patch } : item)),
+    }));
+
+  const addEducation = () =>
+    update((current) => ({
+      ...current,
+      education: [
+        ...current.education,
+        {
+          id: createId("education"),
+          institution: "University / Institution",
+          degree: "Bachelor of Science",
+          field: "Computer Science",
+          startDate: "",
+          endDate: "Present",
+          details: [],
+        },
+      ],
+    }));
+
+  return (
+    <div>
+      <SectionHeading
+        eyebrow="Resume / Education"
+        title="Education"
+        copy="Degrees, institutions, graduation dates, and supporting honors or coursework."
+      />
+      <div className="space-y-4 p-5 max-w-4xl">
+        {resume.education.length === 0 ? (
+          <div className="border border-dashed border-border bg-card/40 p-6 text-center">
+            <p className="text-sm font-medium">No education entries added yet</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Add your university, college, degrees, or continuing education credentials below.
+            </p>
+          </div>
+        ) : (
+          resume.education.map((entry) => (
+            <section key={entry.id} className="border border-border bg-card">
+              <div className="flex items-center justify-between border-b border-border px-4 py-3">
+                <p className="text-sm font-medium">{entry.institution || "Untitled institution"}</p>
+                <ConfirmDelete
+                  label={entry.institution || "education"}
+                  onDelete={() =>
+                    update((current) => ({
+                      ...current,
+                      education: current.education.filter((item) => item.id !== entry.id),
+                    }))
+                  }
+                />
+              </div>
+              <div className="grid gap-4 p-4 sm:grid-cols-2">
+                <Field
+                  label="Institution"
+                  value={entry.institution}
+                  onChange={(institution) => patchEntry(entry.id, { institution })}
+                  placeholder="e.g. Stanford University"
+                />
+                <Field
+                  label="Degree"
+                  value={entry.degree}
+                  onChange={(degree) => patchEntry(entry.id, { degree })}
+                  placeholder="e.g. Bachelor of Science"
+                />
+                <Field
+                  label="Field of Study"
+                  value={entry.field}
+                  onChange={(field) => patchEntry(entry.id, { field })}
+                  placeholder="e.g. Computer Science"
+                />
+                <Field
+                  label="Location"
+                  value={entry.location}
+                  onChange={(location) => patchEntry(entry.id, { location })}
+                  placeholder="e.g. Stanford, CA"
+                />
+                <Field
+                  label="Start date"
+                  value={entry.startDate}
+                  onChange={(startDate) => patchEntry(entry.id, { startDate })}
+                  placeholder="e.g. Sept 2018"
+                />
+                <Field
+                  label="End date"
+                  value={entry.endDate}
+                  onChange={(endDate) => patchEntry(entry.id, { endDate })}
+                  placeholder="e.g. June 2022"
+                />
+                <div className="sm:col-span-2">
+                  <p className="mb-2 text-xs text-muted-foreground">Honors, GPA, or Coursework (Optional)</p>
+                  <SortableBulletList
+                    bullets={entry.details ?? []}
+                    onChange={(details) => patchEntry(entry.id, { details })}
+                  />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="mt-2 touch-manipulation"
+                    onClick={() =>
+                      patchEntry(entry.id, {
+                        details: [
+                          ...(entry.details ?? []),
+                          { id: createId("bullet"), text: "GPA: 3.8/4.0 · Dean's List" },
+                        ],
+                      })
+                    }
+                  >
+                    <IconPlus className="size-3.5 mr-1" /> Add detail / coursework
+                  </Button>
+                </div>
+              </div>
+            </section>
+          ))
+        )}
+        <Button variant="outline" className="touch-manipulation" onClick={addEducation}>
+          <IconPlus className="size-3.5 mr-1.5" /> Add education
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+export function CertificationsPanel() {
+  const workspace = useWorkspaceStore((state) => state.workspace)!;
+  const resume = workspace.resume;
+  const update = useWorkspaceStore((state) => state.updateResume);
+  const setPresentation = useWorkspaceStore((state) => state.setPresentation);
+
+  const certs = resume.certifications ?? [];
+
+  const patchCert = (id: string, patch: Partial<NonNullable<Resume["certifications"]>[number]>) =>
+    update((current) => ({
+      ...current,
+      certifications: (current.certifications ?? []).map((item) =>
+        item.id === id ? { ...item, ...patch } : item
+      ),
+    }));
+
+  const addCert = () => {
+    update((current) => ({
+      ...current,
+      certifications: [
+        ...(current.certifications ?? []),
+        {
+          id: createId("cert"),
+          name: "New Certification",
+          issuer: "Issuing Organization",
+          date: new Date().getFullYear().toString(),
+          url: "",
+        },
+      ],
+    }));
+    if (!workspace.presentation.sections.includes("certifications")) {
+      setPresentation({
+        ...workspace.presentation,
+        sections: [...workspace.presentation.sections, "certifications"],
+      });
+    }
+  };
+
+  return (
+    <div>
+      <SectionHeading
+        eyebrow="Resume / Certifications"
+        title="Certifications & Credentials"
+        copy="Add recognized cloud, security, and engineering credentials with optional verification links."
+      />
+      <div className="space-y-4 p-5 max-w-4xl">
+        {certs.length === 0 ? (
+          <div className="border border-dashed border-border bg-card/40 p-6 text-center">
+            <p className="text-sm font-medium">No certifications added yet</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Include AWS, GCP, CKA, or other industry-recognized technical credentials.
+            </p>
+          </div>
+        ) : (
+          certs.map((cert) => (
+            <section key={cert.id} className="border border-border bg-card">
+              <div className="flex items-center justify-between border-b border-border px-4 py-3">
+                <p className="text-sm font-medium">{cert.name || "Untitled certification"}</p>
+                <ConfirmDelete
+                  label={cert.name || "certification"}
+                  onDelete={() =>
+                    update((current) => ({
+                      ...current,
+                      certifications: (current.certifications ?? []).filter((item) => item.id !== cert.id),
+                    }))
+                  }
+                />
+              </div>
+              <div className="grid gap-4 p-4 sm:grid-cols-2">
+                <Field
+                  label="Certification Name"
+                  value={cert.name}
+                  onChange={(name) => patchCert(cert.id, { name })}
+                  placeholder="e.g. AWS Certified Solutions Architect"
+                />
+                <Field
+                  label="Issuing Organization"
+                  value={cert.issuer}
+                  onChange={(issuer) => patchCert(cert.id, { issuer })}
+                  placeholder="e.g. Amazon Web Services"
+                />
+                <Field
+                  label="Date / Year"
+                  value={cert.date}
+                  onChange={(date) => patchCert(cert.id, { date })}
+                  placeholder="e.g. 2023 or Valid thru 2026"
+                />
+                <Field
+                  label="Verification URL (Optional)"
+                  value={cert.url}
+                  onChange={(url) => patchCert(cert.id, { url })}
+                  placeholder="https://..."
+                />
+              </div>
+            </section>
+          ))
+        )}
+        <Button variant="outline" className="touch-manipulation" onClick={addCert}>
+          <IconPlus className="size-3.5 mr-1.5" /> Add certification
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+export function AchievementsPanel() {
+  const workspace = useWorkspaceStore((state) => state.workspace)!;
+  const resume = workspace.resume;
+  const update = useWorkspaceStore((state) => state.updateResume);
+  const setPresentation = useWorkspaceStore((state) => state.setPresentation);
+
+  const achievements = resume.achievements ?? [];
+
+  const patchAchievement = (id: string, patch: Partial<NonNullable<Resume["achievements"]>[number]>) =>
+    update((current) => ({
+      ...current,
+      achievements: (current.achievements ?? []).map((item) =>
+        item.id === id ? { ...item, ...patch } : item
+      ),
+    }));
+
+  const addAchievement = () => {
+    update((current) => ({
+      ...current,
+      achievements: [
+        ...(current.achievements ?? []),
+        {
+          id: createId("achievement"),
+          title: "New Achievement or Honor",
+          description: "Brief description of the outcome, placement, or recognition",
+          date: new Date().getFullYear().toString(),
+        },
+      ],
+    }));
+    if (!workspace.presentation.sections.includes("achievements")) {
+      setPresentation({
+        ...workspace.presentation,
+        sections: [...workspace.presentation.sections, "achievements"],
+      });
+    }
+  };
+
+  return (
+    <div>
+      <SectionHeading
+        eyebrow="Resume / Achievements"
+        title="Achievements & Honors"
+        copy="Highlight hackathon wins, competitive programming ranks, open-source awards, or publications."
+      />
+      <div className="space-y-4 p-5 max-w-4xl">
+        {achievements.length === 0 ? (
+          <div className="border border-dashed border-border bg-card/40 p-6 text-center">
+            <p className="text-sm font-medium">No achievements added yet</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Add hackathons, coding contests, fellowships, or major open-source milestones.
+            </p>
+          </div>
+        ) : (
+          achievements.map((item) => (
+            <section key={item.id} className="border border-border bg-card">
+              <div className="flex items-center justify-between border-b border-border px-4 py-3">
+                <p className="text-sm font-medium">{item.title || "Untitled achievement"}</p>
+                <ConfirmDelete
+                  label={item.title || "achievement"}
+                  onDelete={() =>
+                    update((current) => ({
+                      ...current,
+                      achievements: (current.achievements ?? []).filter((a) => a.id !== item.id),
+                    }))
+                  }
+                />
+              </div>
+              <div className="grid gap-4 p-4 sm:grid-cols-2">
+                <div className="sm:col-span-2">
+                  <Field
+                    label="Achievement Title"
+                    value={item.title}
+                    onChange={(title) => patchAchievement(item.id, { title })}
+                    placeholder="e.g. 1st Place — National Hackathon 2023"
+                  />
+                </div>
+                <Field
+                  label="Date / Year"
+                  value={item.date}
+                  onChange={(date) => patchAchievement(item.id, { date })}
+                  placeholder="e.g. 2023"
+                />
+                <div className="sm:col-span-2">
+                  <Field
+                    label="Description"
+                    value={item.description}
+                    onChange={(description) => patchAchievement(item.id, { description })}
+                    placeholder="e.g. Built a real-time event pipeline competing among 250+ engineering teams."
+                  />
+                </div>
+              </div>
+            </section>
+          ))
+        )}
+        <Button variant="outline" className="touch-manipulation" onClick={addAchievement}>
+          <IconPlus className="size-3.5 mr-1.5" /> Add achievement
+        </Button>
+      </div>
+    </div>
+  );
 }

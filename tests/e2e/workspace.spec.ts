@@ -38,10 +38,10 @@ test("complete local workspace flow is responsive and keyboard reachable", async
   await page.getByRole("button", { name: "Redo" }).click();
   await expect(headline).toHaveValue("Staff Product Engineer");
 
-  await page.setViewportSize({ width: 1024, height: 768 });
+  await page.setViewportSize({ width: 900, height: 768 });
   await expect(page.getByRole("tab", { name: "Editor" })).toBeVisible();
   await expect(page.getByRole("tab", { name: "PDF Preview" })).toBeVisible();
-  await page.screenshot({ path: "artifacts/workspace-1024x768.png", fullPage: true });
+  await page.screenshot({ path: "artifacts/workspace-900x768.png", fullPage: true });
   await page.getByRole("tab", { name: "PDF Preview" }).click();
   await expect(page.getByRole("button", { name: "Compile locally" })).toBeVisible();
 });
@@ -68,14 +68,13 @@ test("format controls, section reordering, and guidance audit operate accurately
 
   // 1. Format Panel
   await page.getByRole("button", { name: "Format" }).click();
-  await expect(page.getByRole("heading", { name: "Format & Layout" })).toBeVisible();
-  await expect(page.getByRole("button", { name: /Compact/i })).toBeVisible();
-  await expect(page.getByRole("button", { name: /Minimal/i })).toBeVisible();
-
-  // Switch to Minimal preset
-  const minimalBtn = page.getByRole("button", { name: /Minimal/i });
-  await minimalBtn.click();
-  await expect(minimalBtn).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("heading", { name: "Canonical format" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /ArqeloCV template · version 1/i })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Compact/i })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /Minimal/i })).toHaveCount(0);
+  await page.getByLabel("Approved page format").click();
+  await page.getByRole("option", { name: /A4/i }).click();
+  await expect(page.getByLabel("Approved page format")).toHaveText(/A4/i);
 
   // Test section reordering
   const moveDown = page.getByRole("button", { name: /Move Skills down/i });
@@ -96,7 +95,7 @@ test("format controls, section reordering, and guidance audit operate accurately
   // Visual capture at 1024x768
   await page.setViewportSize({ width: 1024, height: 768 });
   await page.screenshot({ path: "artifacts/format-1024x768.png", fullPage: true });
-  await page.getByRole("button", { name: "guidance", exact: true }).click();
+  await page.getByRole("button", { name: "Guidance", exact: true }).click();
   await page.screenshot({ path: "artifacts/guidance-1024x768.png", fullPage: true });
 
   // Visual capture at 390x844

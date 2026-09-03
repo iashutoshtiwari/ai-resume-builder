@@ -15,7 +15,7 @@ export const LatexProjectFileSchema = z.object({
 });
 
 export const WorkspaceSchema = z.object({
-  version: z.literal(3),
+  version: z.literal(4),
   id: z.string().min(1),
   name: z.string().min(1).max(160),
   resume: ResumeSchema,
@@ -29,6 +29,8 @@ export const WorkspaceSchema = z.object({
   activeVariant: z.enum(["original", "current", "tailored"]).default("current"),
   originalLatex: z.string().max(200_000).nullable(),
   generatedLatex: z.string().max(200_000),
+  templateVersion: z.literal(1),
+  latexMode: z.enum(["generated", "manual"]),
   manualLatex: z.string().max(200_000).nullable(),
   manualLatexStale: z.boolean(),
   compilerFiles: z.array(LatexProjectFileSchema).max(40).refine(
@@ -47,7 +49,10 @@ export const WorkspaceSchema = z.object({
   lastCompiledSourceHash: z.string().nullable(),
   lastCompiledPageCount: z.number().int().positive().max(100).nullable(),
   updatedAt: z.iso.datetime(),
-});
+}).refine(
+  (workspace) => workspace.latexMode !== "manual" || workspace.manualLatex !== null,
+  { message: "Manual LaTeX mode requires a manual source.", path: ["manualLatex"] },
+);
 
 export type Workspace = z.infer<typeof WorkspaceSchema>;
 export type LatexProjectFile = z.infer<typeof LatexProjectFileSchema>;

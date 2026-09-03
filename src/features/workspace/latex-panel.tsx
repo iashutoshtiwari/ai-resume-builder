@@ -1,10 +1,22 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { FilePlus2, RotateCcw, ShieldAlert, X } from "lucide-react";
+import { IconFilePlus, IconRotate2, IconShieldExclamation, IconX } from "@tabler/icons-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { getActiveLatexSource } from "@/features/latex/active-source";
 import { useWorkspaceStore } from "@/store/workspace-store";
 import { createId } from "@/lib/utils";
 
@@ -17,7 +29,7 @@ export function LatexPanel() {
   const resetManual = useWorkspaceStore((state) => state.resetManualLatex);
   const addCompilerFiles = useWorkspaceStore((state) => state.addCompilerFiles);
   const removeCompilerFile = useWorkspaceStore((state) => state.removeCompilerFile);
-  const source = workspace.manualLatex ?? workspace.generatedLatex;
+  const source = getActiveLatexSource(workspace);
 
   async function addFiles(files: FileList | null) {
     if (!files?.length) return;
@@ -50,7 +62,7 @@ export function LatexPanel() {
         <div>
           <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-primary">Source / LaTeX</p>
           <h2 className="mt-1 text-lg font-semibold tracking-tight">
-            {workspace.manualLatex === null ? "Generated LaTeX Source" : "Manual LaTeX Override"}
+            {workspace.latexMode === "generated" ? "Generated / Structured Mode" : "Manual LaTeX Override"}
           </h2>
           <p className="mt-0.5 text-xs text-muted-foreground">
             Structured form edits automatically update generated LaTeX unless manual override is active.
@@ -59,19 +71,35 @@ export function LatexPanel() {
         <div className="flex shrink-0 items-center gap-2">
           {workspace.manualLatexStale && (
             <Badge variant="outline" className="text-warning">
-              <ShieldAlert className="size-3.5 mr-1" /> Override stale
+              <IconShieldExclamation className="size-3.5 mr-1" /> Override stale
             </Badge>
           )}
-          {workspace.manualLatex !== null && (
-            <Button size="sm" variant="outline" onClick={resetManual}>
-              <RotateCcw className="size-3.5 mr-1" /> Reset to generated
-            </Button>
+          {workspace.latexMode === "manual" && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button size="sm" variant="outline">
+                  <IconRotate2 className="size-3.5 mr-1" /> Restore ArqeloCV Template
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Replace manual LaTeX?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This resume contains manual LaTeX changes. Restoring the ArqeloCV template will replace those changes with deterministic source generated from your structured resume.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={resetManual}>Restore template</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           )}
         </div>
       </header>
       {workspace.manualLatexStale && (
         <div className="flex shrink-0 items-center justify-between border-b border-warning/30 bg-warning/5 px-5 py-2.5 text-xs text-muted-foreground">
-          <span>Structured edits changed generated source. Keep this override or reset it.</span>
+          <span>Structured edits changed generated source. Your manual source is still active and has not been overwritten.</span>
           <Button size="sm" variant="ghost" onClick={() => setManual(source)}>
             Keep override
           </Button>
@@ -79,7 +107,7 @@ export function LatexPanel() {
       )}
       <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-border px-5 py-2.5">
         <label className="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-none border border-border px-3 text-xs font-medium transition-colors hover:bg-muted focus-within:ring-2 focus-within:ring-primary/40">
-          <FilePlus2 className="size-3.5" /> Add project files
+          <IconFilePlus className="size-3.5" /> Add project files
           <input
             type="file"
             multiple
@@ -96,7 +124,7 @@ export function LatexPanel() {
           <span key={file.id} className="inline-flex min-w-0 max-w-48 items-center gap-1 border border-border bg-background px-2 py-1 font-mono text-[10px]">
             <span className="truncate">{file.name}</span>
             <button type="button" className="shrink-0 text-muted-foreground hover:text-foreground" onClick={() => removeCompilerFile(file.id)} aria-label={`Remove ${file.name}`}>
-              <X className="size-3" />
+              <IconX className="size-3" />
             </button>
           </span>
         ))}

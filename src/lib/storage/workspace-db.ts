@@ -2,7 +2,8 @@ import { openDB, type DBSchema } from "idb";
 import { WorkspaceSchema, type PersistedWorkspaceRecord, type Workspace } from "@/features/workspace/schema";
 import { ResumeSchema } from "@/features/resume/schema";
 import { renderResumeToLatex } from "@/features/latex/renderer";
-import { DEFAULT_PRESENTATION } from "@/features/presentation/schema";
+import { CANONICAL_TEMPLATE_VERSION } from "@/features/latex/templates/canonical";
+import { DEFAULT_PRESENTATION, ResumePresentationSchema } from "@/features/presentation/schema";
 import { createId } from "@/lib/utils";
 
 interface ResumeBuilderDB extends DBSchema {
@@ -43,22 +44,32 @@ export function migrateWorkspace(value: unknown): Workspace {
   if (current.success) return current.data;
   if (!value || typeof value !== "object") throw new Error("The locally saved workspace is corrupt.");
   const legacy = value as Record<string, unknown>;
-  if (legacy.version !== undefined && legacy.version !== 0 && legacy.version !== 1 && legacy.version !== 2) throw new Error("The locally saved workspace uses an unsupported version.");
+  if (legacy.version !== undefined && legacy.version !== 0 && legacy.version !== 1 && legacy.version !== 2 && legacy.version !== 3) throw new Error("The locally saved workspace uses an unsupported version.");
   const resume = ResumeSchema.safeParse(legacy.resume);
   if (!resume.success) throw new Error("The locally saved workspace is corrupt.");
   const originalResume = ResumeSchema.safeParse(legacy.originalResume);
+  const legacyPresentation = legacy.presentation && typeof legacy.presentation === "object"
+    ? legacy.presentation as Record<string, unknown>
+    : {};
+  const presentation = ResumePresentationSchema.safeParse({
+    paperSize: legacyPresentation.paperSize,
+    sections: legacyPresentation.sections,
+  });
+  const templateOptions = presentation.success ? presentation.data : DEFAULT_PRESENTATION;
   return WorkspaceSchema.parse({
-    version: 3,
+    version: 4,
     id: typeof legacy.id === "string" ? legacy.id : createId("workspace"),
     name: typeof legacy.name === "string" ? legacy.name : "Recovered resume",
     resume: resume.data,
     originalResume: originalResume.success ? originalResume.data : resume.data,
     originalLatex: typeof legacy.originalLatex === "string" ? legacy.originalLatex : null,
-    generatedLatex: renderResumeToLatex(resume.data, DEFAULT_PRESENTATION),
+    generatedLatex: renderResumeToLatex(resume.data, templateOptions),
+    templateVersion: CANONICAL_TEMPLATE_VERSION,
+    latexMode: typeof legacy.manualLatex === "string" ? "manual" : "generated",
     manualLatex: typeof legacy.manualLatex === "string" ? legacy.manualLatex : null,
     manualLatexStale: Boolean(legacy.manualLatexStale),
     compilerFiles: Array.isArray(legacy.compilerFiles) ? legacy.compilerFiles : [],
-    presentation: DEFAULT_PRESENTATION,
+    presentation: templateOptions,
     guidanceContext: null,
     targetJob: legacy.targetJob ?? null,
     jobAnalysis: legacy.jobAnalysis ?? null,

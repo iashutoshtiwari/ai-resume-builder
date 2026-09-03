@@ -3,16 +3,16 @@
 import { useMemo, useState } from "react";
 import { diffWords } from "diff";
 import {
-  AlertTriangle,
-  Check,
-  CircleDashed,
-  HelpCircle,
-  RefreshCw,
-  RotateCcw,
-  ShieldAlert,
-  Sparkles,
-  X,
-} from "lucide-react";
+  IconAlertTriangle,
+  IconCheck,
+  IconCircleDashed,
+  IconHelpCircle,
+  IconRefresh,
+  IconRotate2,
+  IconShieldExclamation,
+  IconSparkles,
+  IconX,
+} from "@tabler/icons-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -120,11 +120,11 @@ export function JobPanel({ aiConfigured }: { aiConfigured: boolean }) {
             >
               {busy === "tailor" ? (
                 <>
-                  <CircleDashed className="animate-spin" /> Tailoring resume…
+                  <IconCircleDashed className="animate-spin" /> Tailoring resume…
                 </>
               ) : (
                 <>
-                  <Sparkles /> Tailor Resume
+                  <IconSparkles /> Tailor Resume
                 </>
               )}
             </Button>
@@ -136,7 +136,7 @@ export function JobPanel({ aiConfigured }: { aiConfigured: boolean }) {
           <div className="rounded-none border border-primary/40 bg-primary/10 p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Sparkles className="size-4 text-primary" />
+                <IconSparkles className="size-4 text-primary" />
                 <span className="text-sm font-semibold text-primary">Tailored Resume Proposal Active</span>
               </div>
               <Button
@@ -147,7 +147,7 @@ export function JobPanel({ aiConfigured }: { aiConfigured: boolean }) {
                   toast.info("Restored baseline resume.");
                 }}
               >
-                <RotateCcw className="mr-1 size-3.5" /> Restore Baseline
+                <IconRotate2 className="mr-1 size-3.5" /> Restore Baseline
               </Button>
             </div>
             {workspace.tailoringSummary && (
@@ -181,7 +181,7 @@ export function JobPanel({ aiConfigured }: { aiConfigured: boolean }) {
         </div>
 
         <Button disabled={!aiConfigured || description.trim().length < 40 || busy !== null} onClick={() => void analyze()}>
-          {busy === "analysis" ? <><CircleDashed className="animate-spin" /> Analyzing requirements…</> : <><Sparkles /> Analyze evidence</>}
+          {busy === "analysis" ? <><IconCircleDashed className="animate-spin" /> Analyzing requirements…</> : <><IconSparkles /> Analyze evidence</>}
         </Button>
 
         {!aiConfigured && (
@@ -230,7 +230,7 @@ export function JobPanel({ aiConfigured }: { aiConfigured: boolean }) {
               <section className="border border-destructive/40 bg-destructive/10">
                 <div className="flex items-center justify-between border-b border-destructive/30 px-4 py-3">
                   <div className="flex items-center gap-2">
-                    <ShieldAlert className="size-4 text-red-400" />
+                    <IconShieldExclamation className="size-4 text-red-400" />
                     <h3 className="text-sm font-semibold text-red-400">Mandatory Blocker Signals</h3>
                   </div>
                   <Badge variant="outline" className="border-destructive text-red-400">
@@ -251,7 +251,7 @@ export function JobPanel({ aiConfigured }: { aiConfigured: boolean }) {
             <section className="border border-border">
               <div className="flex items-center justify-between border-b border-border px-4 py-3">
                 <div className="flex items-center gap-2">
-                  <Check className="size-4 text-emerald-400" />
+                  <IconCheck className="size-4 text-emerald-400" />
                   <h3 className="text-sm font-medium">Exact Matches ({jobMatch.groups.strong.length})</h3>
                 </div>
               </div>
@@ -269,7 +269,7 @@ export function JobPanel({ aiConfigured }: { aiConfigured: boolean }) {
             <section className="border border-border">
               <div className="flex items-center justify-between border-b border-border px-4 py-3">
                 <div className="flex items-center gap-2">
-                  <AlertTriangle className="size-4 text-amber-400" />
+                  <IconAlertTriangle className="size-4 text-amber-400" />
                   <h3 className="text-sm font-medium">Transferable & Partial ({jobMatch.groups.transferable.length})</h3>
                 </div>
               </div>
@@ -287,7 +287,7 @@ export function JobPanel({ aiConfigured }: { aiConfigured: boolean }) {
             <section className="border border-border">
               <div className="flex items-center justify-between border-b border-border px-4 py-3">
                 <div className="flex items-center gap-2">
-                  <HelpCircle className="size-4 text-muted-foreground" />
+                  <IconHelpCircle className="size-4 text-muted-foreground" />
                   <h3 className="text-sm font-medium">Unrepresented Qualifications ({jobMatch.groups.gaps.length})</h3>
                 </div>
               </div>
@@ -411,7 +411,7 @@ function ChangeCard({ change }: { change: ResumeChange }) {
                 else toast.error(res.message);
               }}
             >
-              <RotateCcw className="mr-1 size-3.5" /> Revert
+              <IconRotate2 className="mr-1 size-3.5" /> Revert
             </Button>
           ) : (
             <>
@@ -419,7 +419,7 @@ function ChangeCard({ change }: { change: ResumeChange }) {
               {change.type === "rewrite-text" && (
                 <Button size="sm" variant="outline" disabled={stale || change.status !== "pending"} onClick={() => setEditing(true)}>Edit & accept</Button>
               )}
-              <Button size="sm" variant="ghost" disabled={change.status !== "pending"} onClick={() => setStatus(change.id, "rejected")}><X /> Reject</Button>
+              <Button size="sm" variant="ghost" disabled={change.status !== "pending"} onClick={() => setStatus(change.id, "rejected")}><IconX /> Reject</Button>
             </>
           )}
         </div>
@@ -436,7 +436,7 @@ export function ChangesPanel() {
   return <div><PanelHeading eyebrow="Review / Tailoring" title="Atomic proposals" copy="Every operation is revalidated against the current resume before application." action={pending > 0 && <div className="flex gap-2"><Button size="sm" variant="outline" onClick={rejectRemaining}>Reject remaining</Button><Button size="sm" onClick={() => { const result = acceptAll(); toast.success(`${result.applied} safe changes applied`); }}>Accept all safe</Button></div>} /><div className="space-y-4 p-5">{workspace.tailoringChanges.length === 0 ? <EmptyReview label="No tailoring proposals yet" /> : workspace.tailoringChanges.map((change) => <ChangeCard key={change.id} change={change} />)}{workspace.unsupportedGaps.length > 0 && <section className="border border-border"><div className="border-b border-border px-4 py-3"><h3 className="text-sm font-medium">Unsupported gaps · not applicable</h3></div>{workspace.unsupportedGaps.map((gap) => <div key={gap.id} className="border-b border-border px-4 py-3 last:border-b-0"><p className="text-sm text-muted-foreground">{gap.explanation}</p></div>)}</section>}</div></div>;
 }
 
-function EmptyReview({ label }: { label: string }) { return <div className="grid min-h-56 place-items-center border border-dashed border-border text-center"><div><RefreshCw className="mx-auto size-5 text-muted-foreground" /><p className="mt-3 text-sm font-medium">{label}</p><p className="mt-1 text-xs text-muted-foreground">Run the relevant AI review when you are ready.</p></div></div>; }
+function EmptyReview({ label }: { label: string }) { return <div className="grid min-h-56 place-items-center border border-dashed border-border text-center"><div><IconRefresh className="mx-auto size-5 text-muted-foreground" /><p className="mt-3 text-sm font-medium">{label}</p><p className="mt-1 text-xs text-muted-foreground">Run the relevant AI review when you are ready.</p></div></div>; }
 
 export function ProofreadPanel({ aiConfigured }: { aiConfigured: boolean }) {
   const workspace = useWorkspaceStore((state) => state.workspace)!;
@@ -445,5 +445,5 @@ export function ProofreadPanel({ aiConfigured }: { aiConfigured: boolean }) {
   const reject = useWorkspaceStore((state) => state.rejectProofreading);
   const [busy, setBusy] = useState(false);
   async function run() { setBusy(true); try { const result = await postAI<ProofreadingResponse>("/api/ai/proofread", { resume: workspace.resume, resumeRevision: workspace.resumeRevision }); setProofreading(result.changes); toast.success(`${result.changes.length} proofreading changes found`); } catch (error) { toast.error(error instanceof Error ? error.message : "Proofreading failed."); } finally { setBusy(false); } }
-  return <div><PanelHeading eyebrow="Review / Proofread" title="Minimal language corrections" copy="Meaning, facts, technologies, and metrics are preserved." action={<Button size="sm" disabled={!aiConfigured || busy} onClick={() => void run()}>{busy ? <CircleDashed className="animate-spin" /> : <Sparkles />} Run proofread</Button>} /><div className="space-y-4 p-5">{workspace.proofreadingChanges.length === 0 ? <EmptyReview label="No proofreading changes" /> : workspace.proofreadingChanges.map((change) => { const stale = change.resumeRevision !== workspace.resumeRevision && change.status === "pending"; return <article key={change.id} className="border border-border bg-card"><div className="flex items-center justify-between border-b border-border px-4 py-3"><Badge variant="outline">{change.category}</Badge>{statusBadge(change.status, stale)}</div><div className="space-y-4 p-4"><WordDiff before={change.before} after={change.after} /><p className="text-xs leading-5 text-muted-foreground">{change.explanation}</p><GuidanceCitationBadges ruleIds={change.guidanceRuleIds} /><div className="flex gap-2"><Button size="sm" disabled={stale || change.status !== "pending"} onClick={() => { const result = accept(change.id); if (result.ok) toast.success("Correction applied"); else toast.error(result.message); }}>Accept</Button><Button size="sm" variant="ghost" disabled={change.status !== "pending"} onClick={() => reject(change.id)}>Reject</Button></div></div></article>; })}</div></div>;
+  return <div><PanelHeading eyebrow="Review / Proofread" title="Minimal language corrections" copy="Meaning, facts, technologies, and metrics are preserved." action={<Button size="sm" disabled={!aiConfigured || busy} onClick={() => void run()}>{busy ? <IconCircleDashed className="animate-spin" /> : <IconSparkles />} Run proofread</Button>} /><div className="space-y-4 p-5">{workspace.proofreadingChanges.length === 0 ? <EmptyReview label="No proofreading changes" /> : workspace.proofreadingChanges.map((change) => { const stale = change.resumeRevision !== workspace.resumeRevision && change.status === "pending"; return <article key={change.id} className="border border-border bg-card"><div className="flex items-center justify-between border-b border-border px-4 py-3"><Badge variant="outline">{change.category}</Badge>{statusBadge(change.status, stale)}</div><div className="space-y-4 p-4"><WordDiff before={change.before} after={change.after} /><p className="text-xs leading-5 text-muted-foreground">{change.explanation}</p><GuidanceCitationBadges ruleIds={change.guidanceRuleIds} /><div className="flex gap-2"><Button size="sm" disabled={stale || change.status !== "pending"} onClick={() => { const result = accept(change.id); if (result.ok) toast.success("Correction applied"); else toast.error(result.message); }}>Accept</Button><Button size="sm" variant="ghost" disabled={change.status !== "pending"} onClick={() => reject(change.id)}>Reject</Button></div></div></article>; })}</div></div>;
 }

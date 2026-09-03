@@ -1,7 +1,15 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { Sparkles, Zap, Globe, AlertCircle, Check, ChevronDown } from "lucide-react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import {
+  IconSparkles,
+  IconBolt,
+  IconWorld,
+  IconAlertCircle,
+  IconCheck,
+  IconChevronDown,
+  type Icon as TablerIcon,
+} from "@tabler/icons-react";
 import { toast } from "sonner";
 import { useWorkspaceStore, type ActiveAiProvider } from "@/store/workspace-store";
 
@@ -14,16 +22,19 @@ interface ProviderInfo {
   description: string;
 }
 
-const PROVIDER_ICONS: Record<ActiveAiProvider, typeof Sparkles> = {
-  google: Sparkles,
-  groq: Zap,
-  openrouter: Globe,
+const PROVIDER_ICONS: Record<ActiveAiProvider, TablerIcon> = {
+  google: IconSparkles,
+  groq: IconBolt,
+  openrouter: IconWorld,
 };
+
+const subscribeToHydration = () => () => undefined;
 
 export function AiProviderSwitch() {
   const activeProvider = useWorkspaceStore((state) => state.activeAiProvider);
   const setActiveProvider = useWorkspaceStore((state) => state.setActiveAiProvider);
   const [isOpen, setIsOpen] = useState(false);
+  const mounted = useSyncExternalStore(subscribeToHydration, () => true, () => false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const [providers, setProviders] = useState<ProviderInfo[]>([
@@ -93,8 +104,11 @@ export function AiProviderSwitch() {
     };
   }, [isOpen]);
 
-  const current = providers.find((p) => p.id === activeProvider) || providers[0];
-  const Icon = PROVIDER_ICONS[activeProvider] || Sparkles;
+  // Use the SSR-safe default until mounted to avoid hydration mismatch
+  // (Zustand reads activeAiProvider from localStorage which may differ from the server default)
+  const displayProvider = mounted ? activeProvider : "google";
+  const current = providers.find((p) => p.id === displayProvider) || providers[0];
+  const Icon = PROVIDER_ICONS[displayProvider] || IconSparkles;
 
   const handleSelect = (provider: ProviderInfo) => {
     setActiveProvider(provider.id);
@@ -126,7 +140,7 @@ export function AiProviderSwitch() {
           }`}
           title={current.configured ? "Configured & ready" : "API key missing in .env.local"}
         />
-        <ChevronDown
+        <IconChevronDown
           className={`size-3 text-muted-foreground transition-transform duration-150 ${
             isOpen ? "rotate-180" : ""
           }`}
@@ -140,7 +154,7 @@ export function AiProviderSwitch() {
           </div>
           <div className="mt-1 space-y-0.5">
             {providers.map((p) => {
-              const ItemIcon = PROVIDER_ICONS[p.id] || Sparkles;
+              const ItemIcon = PROVIDER_ICONS[p.id] || IconSparkles;
               const isSelected = p.id === activeProvider;
               return (
                 <button
@@ -173,12 +187,12 @@ export function AiProviderSwitch() {
                       </div>
                       {!p.configured && (
                         <div className="mt-0.5 flex items-center gap-1 font-mono text-[9px] text-amber-500">
-                          <AlertCircle className="size-2.5 shrink-0" /> Key missing in .env
+                          <IconAlertCircle className="size-2.5 shrink-0" /> Key missing in .env
                         </div>
                       )}
                     </div>
                   </div>
-                  {isSelected && <Check className="mt-1 size-3.5 shrink-0 text-primary" />}
+                  {isSelected && <IconCheck className="mt-1 size-3.5 shrink-0 text-primary" />}
                 </button>
               );
             })}

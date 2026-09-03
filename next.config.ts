@@ -15,6 +15,12 @@ const nextConfig: NextConfig = {
     resolveAlias: {
       "blake3-wasm/browser.js": "./src/lib/vendor/blake3-shim.ts",
     },
+    rules: {
+      "*.tex": {
+        loaders: ["./scripts/raw-text-loader.cjs"],
+        as: "*.js",
+      },
+    },
   },
   async headers() {
     return [{ source: "/(.*)", headers: securityHeaders }];
