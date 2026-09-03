@@ -51,8 +51,8 @@ export async function callOpenRouter(
         headers: {
           Authorization: `Bearer ${apiKey}`,
           "Content-Type": "application/json",
-          "HTTP-Referer": process.env.APP_URL || "https://github.com/iashutoshtiwari/ai-resume-builder",
-          "X-Title": "AI Resume Builder",
+          "HTTP-Referer": process.env.APP_URL || "https://arqelo.ashutoshtiwari.dev",
+          "X-Title": "ArqeloCV",
         },
         body: JSON.stringify({
           model,

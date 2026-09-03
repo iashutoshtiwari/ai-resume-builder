@@ -6,56 +6,41 @@ import { JsonLd } from "@/features/seo/json-ld";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 
+import { siteConfig } from "@/config/site";
+
 const dmSansHeading = DM_Sans({subsets:['latin'],variable:'--font-heading'});
 const inter = Inter({subsets:['latin'],variable:'--font-sans'});
 const geist = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
-const baseUrl =
-  process.env.NEXT_PUBLIC_APP_URL ||
-  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
-
 export const metadata: Metadata = {
-  metadataBase: new URL(baseUrl),
+  metadataBase: new URL(siteConfig.url),
   title: {
-    default: "AI Resume Builder — Evidence-Grounded LaTeX Resume Tailoring",
-    template: "%s | AI Resume Builder",
+    default: siteConfig.title,
+    template: `%s | ${siteConfig.name}`,
   },
-  description:
-    "Evidence-grounded resume tailoring with ATS-ready LaTeX generation. Import PDF or DOCX, match against job postings, review proposals, and compile through a dedicated TeX service.",
-  applicationName: "AI Resume Builder",
-  authors: [{ name: "AI Resume Builder Team" }],
-  creator: "AI Resume Builder",
-  publisher: "AI Resume Builder",
-  keywords: [
-    "AI resume builder",
-    "LaTeX resume",
-    "ATS friendly resume",
-    "evidence grounded resume tailoring",
-    "LaTeX resume compiler",
-    "ATS resume PDF",
-    "local resume builder",
-    "open source resume builder",
-    "ATS resume optimizer",
-  ],
-  category: "Productivity",
+  description: siteConfig.description,
+  applicationName: siteConfig.name,
+  authors: [...siteConfig.authors],
+  creator: siteConfig.creator,
+  publisher: siteConfig.publisher,
+  keywords: [...siteConfig.keywords],
+  category: siteConfig.category,
   alternates: {
     canonical: "/",
   },
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "/",
-    siteName: "AI Resume Builder",
-    title: "AI Resume Builder — Evidence-Grounded LaTeX Resume Tailoring",
-    description:
-      "Evidence-grounded resume tailoring and ATS-ready LaTeX generation. Match job descriptions without inventing experience.",
+    url: siteConfig.canonical,
+    siteName: siteConfig.name,
+    title: siteConfig.title,
+    description: siteConfig.description,
   },
   twitter: {
     card: "summary_large_image",
-    title: "AI Resume Builder — Evidence-Grounded LaTeX Resume Tailoring",
-    description:
-      "Evidence-grounded resume tailoring and ATS-ready LaTeX generation. Match job descriptions without inventing experience.",
+    title: siteConfig.title,
+    description: siteConfig.description,
   },
   robots: {
     index: true,

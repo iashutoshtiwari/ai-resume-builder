@@ -11,7 +11,6 @@ import {
   Code2,
   Columns2,
   FileCheck2,
-  FilePenLine,
   GraduationCap,
   History,
   LayoutDashboard,
@@ -114,10 +113,10 @@ function Navigation({ collapsed, onToggle }: { collapsed: boolean; onToggle: () 
         ) : (
           <>
             <Link href="/" className="flex min-w-0 items-center gap-2">
-              <div className="grid size-7 shrink-0 place-items-center border border-primary/40 bg-primary/10">
-                <FilePenLine className="size-3.5 text-primary" />
+              <div className="grid size-7 shrink-0 place-items-center border border-primary/40 bg-primary/10 text-xs font-black text-primary">
+                A
               </div>
-              <span className="truncate text-xs font-semibold">Resume Builder</span>
+              <span className="truncate text-xs font-semibold tracking-tight">ArqeloCV</span>
             </Link>
             <Button
               size="icon-sm"
@@ -179,10 +178,10 @@ function Navigation({ collapsed, onToggle }: { collapsed: boolean; onToggle: () 
             <TooltipTrigger asChild>
               <Link
                 href="/"
-                className="grid size-7 place-items-center border border-primary/40 bg-primary/10 text-primary transition-colors hover:bg-primary/20"
-                aria-label="Home"
+                className="grid size-7 place-items-center border border-primary/40 bg-primary/10 text-xs font-black text-primary transition-colors hover:bg-primary/20"
+                aria-label="ArqeloCV Home"
               >
-                <FilePenLine className="size-3.5" />
+                A
               </Link>
             </TooltipTrigger>
             <TooltipContent side="right">Home</TooltipContent>

@@ -182,7 +182,7 @@ export function PdfPreview({ compact = false }: { compact?: boolean }) {
                 onClick={() => void compile()}
                 disabled={compileStatus === "compiling"}
               >
-                {compileStatus === "compiling" ? "Compiling PDF…" : "Compile to PDF"}
+                {compileStatus === "compiling" ? "Compiling PDF…" : "Compile locally"}
               </Button>
             </div>
           </div>

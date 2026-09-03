@@ -70,6 +70,6 @@ Write-Host " Deployment Complete! 100% Free Tier Configuration Verified" -Foregr
 Write-Host "==============================================================================" -ForegroundColor Green
 Write-Host "Service URL: $ServiceUrl" -ForegroundColor White
 Write-Host ""
-Write-Host "To connect this service to AI Resume Builder, add this to your .env.local file:" -ForegroundColor Yellow
+Write-Host "To connect this service to ArqeloCV, add this to your .env.local file:" -ForegroundColor Yellow
 Write-Host "LATEX_COMPILER_URL=$ServiceUrl" -ForegroundColor Cyan
 Write-Host "==============================================================================" -ForegroundColor Green

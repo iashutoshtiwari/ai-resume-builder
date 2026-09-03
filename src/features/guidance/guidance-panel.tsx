@@ -75,7 +75,7 @@ export function GuidancePanel() {
       <header className="border-b border-border px-5 py-5">
         <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-primary">Guidance / ATS Audit</p>
         <div className="mt-2 flex items-center justify-between">
-          <h2 className="text-xl font-semibold tracking-tight">Resume guidance</h2>
+          <h2 className="text-xl font-semibold tracking-tight">EngineeringResumes Guidance</h2>
           <Badge variant="outline" className="font-mono text-[10px]">
             {GUIDANCE_SNAPSHOT_VERSION}
           </Badge>

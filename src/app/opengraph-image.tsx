@@ -1,7 +1,8 @@
 import { ImageResponse } from "next/og";
+import { siteConfig } from "@/config/site";
 
 export const runtime = "nodejs";
-export const alt = "AI Resume Builder — Evidence-Grounded LaTeX Resume Tailoring";
+export const alt = "ArqeloCV — AI Resume Builder for Software Engineers";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -16,11 +17,11 @@ export default function Image() {
           flexDirection: "column",
           justifyContent: "space-between",
           backgroundColor: "#09090b",
-          padding: "64px 72px",
+          padding: "72px 80px",
           fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
           color: "#fafafa",
           backgroundImage:
-            "radial-gradient(circle at 100% 0%, rgba(34, 197, 94, 0.15) 0%, transparent 50%), radial-gradient(circle at 0% 100%, rgba(24, 24, 27, 0.8) 0%, transparent 60%)",
+            "radial-gradient(circle at 100% 0%, rgba(34, 197, 94, 0.12) 0%, transparent 45%), radial-gradient(circle at 0% 100%, rgba(24, 24, 27, 0.8) 0%, transparent 50%)",
           border: "12px solid #18181b",
         }}
       >
@@ -33,108 +34,96 @@ export default function Image() {
                 height: 48,
                 borderRadius: 8,
                 backgroundColor: "rgba(34, 197, 94, 0.15)",
-                border: "1.5px solid rgba(34, 197, 94, 0.5)",
+                border: "1.5px solid rgba(34, 197, 94, 0.6)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 color: "#22c55e",
                 fontSize: 26,
-                fontWeight: 700,
-                fontFamily: "monospace",
+                fontWeight: 900,
+                fontFamily: "system-ui, -apple-system, sans-serif",
               }}
             >
-              {"{ }"}
+              A
             </div>
-            <span style={{ fontSize: 24, fontWeight: 700, letterSpacing: "-0.02em", color: "#f4f4f5" }}>
-              AI Resume Builder
+            <span style={{ fontSize: 28, fontWeight: 700, letterSpacing: "-0.03em", color: "#f4f4f5" }}>
+              ArqeloCV
             </span>
           </div>
+
           <div
             style={{
-              padding: "8px 16px",
-              borderRadius: 9999,
+              padding: "8px 18px",
+              borderRadius: 6,
               border: "1px solid #27272a",
               backgroundColor: "#18181b",
               fontSize: 14,
               color: "#a1a1aa",
               fontFamily: "monospace",
-              letterSpacing: "0.08em",
+              letterSpacing: "0.06em",
             }}
           >
-            PDF · DOCX · LATEX · WASM
+            PDF · DOCX · LATEX
           </div>
         </div>
 
         {/* Center Hero Message */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "16px", maxWidth: "980px" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "20px", maxWidth: "1000px" }}>
           <div
             style={{
               fontSize: 16,
-              fontWeight: 600,
+              fontWeight: 700,
               textTransform: "uppercase",
               letterSpacing: "0.2em",
               color: "#22c55e",
               fontFamily: "monospace",
             }}
           >
-            Evidence-Grounded Resume Tailoring
+            AI Resume Builder for Software Engineers
           </div>
           <h1
             style={{
-              fontSize: 58,
+              fontSize: 56,
               fontWeight: 800,
-              lineHeight: 1.1,
-              letterSpacing: "-0.03em",
+              lineHeight: 1.12,
+              letterSpacing: "-0.035em",
               margin: 0,
               color: "#ffffff",
             }}
           >
-            Tailor for any job description.
+            Tailored to the job.
             <br />
-            <span style={{ color: "#a1a1aa" }}>Zero hallucinations. Deterministic LaTeX.</span>
+            <span style={{ color: "#a1a1aa" }}>Grounded in your actual experience.</span>
           </h1>
           <p
             style={{
               fontSize: 22,
-              lineHeight: 1.4,
-              color: "#71717a",
+              lineHeight: 1.45,
+              color: "#a1a1aa",
               margin: 0,
-              marginTop: "8px",
+              marginTop: "4px",
             }}
           >
-            Every bullet change is grounded in verifiable candidate evidence, checked with Zod schemas, and rendered through a dedicated TeX service.
+            Build, improve, and tailor your engineering resume with AI. Factual accuracy safeguards, deterministic LaTeX output, and ATS-ready PDF exports.
           </p>
         </div>
 
-        {/* Bottom Feature Badges */}
-        <div style={{ display: "flex", gap: "16px", marginTop: "16px" }}>
-          {[
-            { title: "ATS Guaranteed", subtitle: "Clean LaTeX glyphs & standard fonts" },
-            { title: "TeX Live PDF", subtitle: "Compiles through a dedicated service" },
-            { title: "Client-Side Privacy", subtitle: "Resumes never stored in remote DBs" },
-            { title: "Atomic Diffs", subtitle: "Inspect & approve every modification" },
-          ].map((feature) => (
-            <div
-              key={feature.title}
-              style={{
-                flex: 1,
-                display: "flex",
-                flexDirection: "column",
-                gap: "4px",
-                padding: "16px 18px",
-                backgroundColor: "#121215",
-                border: "1px solid #27272a",
-                borderRadius: 8,
-              }}
-            >
-              <div style={{ fontSize: 16, fontWeight: 700, color: "#f4f4f5" }}>
-                {feature.title}
-              </div>
-              <div style={{ fontSize: 12, color: "#71717a", lineHeight: 1.3 }}>
-                {feature.subtitle}
-              </div>
-            </div>
-          ))}
+        {/* Bottom Bar */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            borderTop: "1px solid #27272a",
+            paddingTop: "24px",
+          }}
+        >
+          <div style={{ fontSize: 18, color: "#22c55e", fontFamily: "monospace", fontWeight: 600 }}>
+            {siteConfig.url.replace("https://", "")}
+          </div>
+          <div style={{ fontSize: 14, color: "#71717a", fontFamily: "monospace" }}>
+            Deterministic LaTeX · Zero Hallucinations · ATS-Friendly
+          </div>
         </div>
       </div>
     ),

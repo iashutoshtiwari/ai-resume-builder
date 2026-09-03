@@ -1,10 +1,12 @@
-# AI Resume Builder — Full Technical Specification
+# ArqeloCV — Full Technical Specification
+
+Production URL: https://arqelo.ashutoshtiwari.dev
 
 ## Overview
 
-AI Resume Builder is a privacy-first, evidence-grounded resume tailoring application built on Next.js 16, TypeScript, React 19, Tailwind CSS 4, and WebAssembly.
+ArqeloCV is an AI resume builder for software engineers. It is a privacy-first, evidence-grounded resume tailoring application built on Next.js 16, TypeScript, React 19, Tailwind CSS 4, and WebAssembly.
 
-Traditional AI resume tools generate text in a black box, frequently inventing quantifiable accomplishments, falsifying skills, or outputting brittle multi-column documents that fail Applicant Tracking System (ATS) parsers. AI Resume Builder solves this through three core principles:
+Traditional AI resume tools generate text in a black box, frequently inventing quantifiable accomplishments, falsifying skills, or outputting brittle multi-column documents that fail Applicant Tracking System (ATS) parsers. ArqeloCV solves this through three core principles:
 1. **Schema as Source of Truth**: The resume data model is strictly validated via Zod (`ResumeSchema`). Output LaTeX code is generated deterministically from this schema.
 2. **Factuality & Evidence Grounding**: AI tailoring operates under strict constraints. Every bullet revision or addition must point directly to explicit evidence in the candidate's existing background. Revisions that invent ungrounded metrics or skills are rejected at the validator layer.
 3. **Restricted Docker Compilation**: LaTeX documents compile through a dedicated TeX Live service with shell escape disabled, execution limits, and disposable request directories.

@@ -26,11 +26,12 @@ import {
   type SupportedFormat,
 } from "@/lib/document/extract";
 import { useWorkspaceStore } from "@/store/workspace-store";
+import Link from "next/link";
 import {
   ArrowRight,
+  ArrowUpRight,
   Check,
   CircleDashed,
-  FileCode2,
   FileText,
   FileType,
   FolderOpen,
@@ -44,6 +45,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { AiProviderSwitch } from "@/features/workspace/ai-provider-switch";
+import { siteConfig } from "@/config/site";
 
 type ApiError = { error?: { message?: string } };
 
@@ -581,7 +583,7 @@ export function ImportScreen({
                   disabled={isBuilding}
                   onClick={() => void handleOpenRaw()}
                 >
-                  Skip AI Polish & Open Raw
+                  Skip AI Polish & Open Workspace
                 </Button>
                 <Button
                   variant="ghost"
@@ -605,73 +607,132 @@ export function ImportScreen({
 
   return (
     <main className="min-h-screen">
-      <header className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6">
-        <div className="flex items-center gap-3">
-          <div className="grid size-8 place-items-center border border-primary/40 bg-primary/10">
-            <FileCode2 className="size-4 text-primary" />
+      <header className="sticky top-0 z-40 border-b border-border/60 bg-background/95 backdrop-blur">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
+          <div className="flex items-center gap-6">
+            <Link href="/" className="flex items-center gap-2.5">
+              <div className="grid size-7 place-items-center border border-primary/40 bg-primary/10 text-xs font-black text-primary">
+                A
+              </div>
+              <span className="text-sm font-bold tracking-tight text-foreground">
+                ArqeloCV
+              </span>
+            </Link>
+            <nav className="hidden md:flex items-center gap-5 text-xs text-muted-foreground">
+              <a href="#how-it-works" className="transition-colors hover:text-foreground">
+                How it works
+              </a>
+              <a href="#features" className="transition-colors hover:text-foreground">
+                Features
+              </a>
+              <a href="#trust" className="transition-colors hover:text-foreground">
+                Trust
+              </a>
+              <a href="#faq" className="transition-colors hover:text-foreground">
+                FAQ
+              </a>
+              <a
+                href={siteConfig.githubUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1 transition-colors hover:text-foreground"
+              >
+                Open Source <ArrowUpRight className="size-3" />
+              </a>
+            </nav>
           </div>
-          <span className="text-sm font-semibold">AI Resume Builder</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <AiProviderSwitch />
-          <Badge variant="outline" className="font-mono text-[10px]">
-            v0.2
-          </Badge>
+          <div className="flex items-center gap-2.5">
+            <AiProviderSwitch />
+            <Button
+              size="sm"
+              onClick={() => {
+                document.getElementById("upload-resume")?.scrollIntoView({ behavior: "smooth" });
+                inputRef.current?.focus();
+              }}
+              className="text-xs"
+            >
+              Build Your Resume
+            </Button>
+          </div>
         </div>
       </header>
 
-      <div className="mx-auto grid max-w-7xl gap-8 px-4 pb-12 pt-6 sm:px-6 sm:pt-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-start lg:gap-12 lg:pt-[6vh]">
+      <div className="mx-auto grid max-w-7xl gap-8 px-4 pb-12 pt-6 sm:px-6 sm:pt-10 lg:grid-cols-[0.95fr_1.05fr] lg:items-start lg:gap-12 lg:pt-[5vh]">
         <section className="max-w-xl">
           <p className="font-mono text-xs uppercase tracking-[0.2em] text-primary">
-            Evidence-Grounded Resume Tailoring
+            ArqeloCV
           </p>
-          <h1 className="mt-4 text-4xl font-semibold leading-[1.05] tracking-tight sm:text-5xl lg:text-6xl">
-            Upload your resume.
-            <br />
-            <span className="text-muted-foreground">Tailor for any job.</span>
+          <h1 className="mt-3 text-4xl font-semibold leading-[1.08] tracking-tight sm:text-5xl lg:text-6xl">
+            AI Resume Builder for Software Engineers
           </h1>
-          <p className="mt-5 max-w-md text-sm leading-relaxed text-muted-foreground sm:text-base">
-            Upload your current resume in <strong>PDF or Word (.docx)</strong>{" "}
-            format. Paste any job description to compare requirements, generate
-            verified improvements, and compile a polished LaTeX PDF.
+          <p className="mt-4 max-w-md text-sm leading-relaxed text-muted-foreground sm:text-base">
+            Build, improve, and tailor your engineering resume with AI.
+            Import what you already have, target a job, and generate a
+            professional resume grounded in your actual experience.
           </p>
+
+          <div className="mt-6 flex flex-wrap items-center gap-3">
+            <Button
+              size="default"
+              onClick={() => {
+                document.getElementById("upload-resume")?.scrollIntoView({ behavior: "smooth" });
+                inputRef.current?.focus();
+              }}
+              className="text-xs"
+            >
+              Build Your Resume <ArrowRight className="ml-1.5 size-3.5" />
+            </Button>
+            <Button
+              variant="outline"
+              size="default"
+              asChild
+              className="text-xs"
+            >
+              <a
+                href={siteConfig.githubUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1.5"
+              >
+                View on GitHub <ArrowUpRight className="size-3.5" />
+              </a>
+            </Button>
+          </div>
+
           <div className="mt-8 grid max-w-lg grid-cols-1 gap-px border-y border-border bg-border sm:grid-cols-3">
-            {[
-              [
-                ShieldCheck,
-                "Factual safeguards",
-                "Evidence-grounded edits only",
-              ],
-              [
-                LockKeyhole,
-                "TeX Live Engine",
-                "Standardized ATS-ready PDF output",
-              ],
-              [Sparkles, "Atomic Diffs", "Review and approve every change"],
-            ].map(([Icon, title, copy]) => {
-              const Glyph = Icon as typeof ShieldCheck;
-              return (
-                <div key={String(title)} className="bg-background px-3.5 py-4">
-                  <Glyph className="size-4 text-primary" />
-                  <p className="mt-2.5 text-xs font-medium">{String(title)}</p>
-                  <p className="mt-1 text-[11px] text-muted-foreground leading-tight">
-                    {String(copy)}
-                  </p>
-                </div>
-              );
-            })}
+            <div className="bg-background px-3.5 py-4">
+              <ShieldCheck className="size-4 text-primary" />
+              <p className="mt-2 text-xs font-medium">Grounded in Experience</p>
+              <p className="mt-1 text-[11px] leading-tight text-muted-foreground">
+                Emphasize real skills without inventing experience
+              </p>
+            </div>
+            <div className="bg-background px-3.5 py-4">
+              <LockKeyhole className="size-4 text-primary" />
+              <p className="mt-2 text-xs font-medium">ATS-Friendly LaTeX</p>
+              <p className="mt-1 text-[11px] leading-tight text-muted-foreground">
+                Standard single-column vector PDF output
+              </p>
+            </div>
+            <div className="bg-background px-3.5 py-4">
+              <Sparkles className="size-4 text-primary" />
+              <p className="mt-2 text-xs font-medium">Targeted Job Match</p>
+              <p className="mt-1 text-[11px] leading-tight text-muted-foreground">
+                Align accomplishments directly to the role
+              </p>
+            </div>
           </div>
         </section>
 
-        <section className="border border-border bg-card shadow-2xl shadow-black/20">
-          <div className="flex items-center justify-between border-b border-border px-5 py-4">
+        <section id="upload-resume" className="border border-border bg-card shadow-2xl shadow-black/20">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b border-border px-5 py-4">
             <div>
-              <h2 className="text-sm font-medium">Upload Current Resume</h2>
+              <h2 className="text-sm font-medium">Upload your resume</h2>
               <p className="mt-0.5 text-xs text-muted-foreground">
                 Accepts PDF, Word (.docx), LaTeX (.tex), or plain text
               </p>
             </div>
-            <div className="flex items-center gap-1.5">
+            <div className="flex shrink-0 items-center gap-1.5">
               <Badge variant="outline" className="font-mono text-[9px]">
                 PDF
               </Badge>
@@ -829,7 +890,16 @@ export function ImportScreen({
         </section>
       </div>
 
-      <LandingContent />
+      <LandingContent
+        onStartSample={async () => {
+          await startWorkspace(
+            sampleResume,
+            null,
+            "Sample Software Engineer Resume"
+          );
+          router.push("/workspace");
+        }}
+      />
     </main>
   );
 }

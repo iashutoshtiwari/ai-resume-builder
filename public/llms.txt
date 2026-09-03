@@ -1,8 +1,10 @@
-# AI Resume Builder
+# ArqeloCV
 
-> Evidence-grounded resume tailoring workspace with restricted Docker TeX compilation.
+> AI resume builder for software engineers.
 
-AI Resume Builder converts unstructured resumes (PDF, Word DOCX, LaTeX, plain text) into structured JSON resumes, evaluates them against target job descriptions, generates evidence-grounded proposals without inventing experience, and deterministically renders clean, ATS-friendly LaTeX PDFs through a restricted Docker TeX service.
+ArqeloCV is an AI resume builder for software engineers. It converts unstructured resumes (PDF, Word DOCX, LaTeX, plain text) into structured engineering resumes, evaluates them against target job descriptions, generates evidence-grounded proposals without inventing experience, and deterministically renders clean, ATS-friendly LaTeX PDFs through a restricted Docker TeX service.
+
+Production URL: https://arqelo.ashutoshtiwari.dev
 
 ## Core Capabilities
 

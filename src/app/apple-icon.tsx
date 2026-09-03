@@ -14,15 +14,16 @@ export default function AppleIcon() {
           alignItems: "center",
           justifyContent: "center",
           backgroundColor: "#09090b",
-          border: "4px solid rgba(34, 197, 94, 0.6)",
+          border: "8px solid rgba(34, 197, 94, 0.8)",
           borderRadius: 36,
           color: "#22c55e",
-          fontSize: 90,
-          fontWeight: 800,
-          fontFamily: "monospace",
+          fontSize: 104,
+          fontWeight: 900,
+          fontFamily: "system-ui, -apple-system, sans-serif",
+          letterSpacing: "-0.05em",
         }}
       >
-        {"{}"}
+        A
       </div>
     ),
     { ...size }

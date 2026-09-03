@@ -181,7 +181,7 @@ export function JobPanel({ aiConfigured }: { aiConfigured: boolean }) {
         </div>
 
         <Button disabled={!aiConfigured || description.trim().length < 40 || busy !== null} onClick={() => void analyze()}>
-          {busy === "analysis" ? <><CircleDashed className="animate-spin" /> Analyzing requirements…</> : <><Sparkles /> Analyze job match</>}
+          {busy === "analysis" ? <><CircleDashed className="animate-spin" /> Analyzing requirements…</> : <><Sparkles /> Analyze evidence</>}
         </Button>
 
         {!aiConfigured && (
@@ -302,6 +302,9 @@ export function JobPanel({ aiConfigured }: { aiConfigured: boolean }) {
             </section>
           </div>
         )}
+        <p className="border-t border-border pt-4 text-xs leading-5 text-muted-foreground">
+          AI requests leave this browser and are processed by Google Gemini or OpenRouter. Suggestions remain unapplied until you approve them.
+        </p>
       </div>
     </div>
   );

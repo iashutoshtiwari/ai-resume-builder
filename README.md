@@ -1,15 +1,16 @@
 <div align="center">
 
-# AI Resume Builder
+# ArqeloCV
 
-**Evidence-Grounded Resume Tailoring & Deterministic LaTeX Engine for Software Engineers**
+**AI Resume Builder for Software Engineers**
 
+[![Production URL](https://img.shields.io/badge/Production-arqelo.ashutoshtiwari.dev-emerald?style=for-the-badge)](https://arqelo.ashutoshtiwari.dev)
 [![Next.js](https://img.shields.io/badge/Next.js-16.3.4-black?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19.2-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x_Strict-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
 [![Docker TeX Live](https://img.shields.io/badge/Docker-TeX_Live_Sandbox-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
-[![Tests](https://img.shields.io/badge/Tests-97%2F97_Passing-emerald?style=for-the-badge&logo=vitest&logoColor=white)](https://vitest.dev/)
+[![Tests](https://img.shields.io/badge/Tests-124%2F124_Passing-emerald?style=for-the-badge&logo=vitest&logoColor=white)](https://vitest.dev/)
 [![License](https://img.shields.io/badge/License-MIT-purple?style=for-the-badge)](LICENSE)
 
 <p align="center">
@@ -17,7 +18,7 @@
   <a href="#-end-to-end-architecture">Architecture</a> •
   <a href="#-quick-start">Quick Start</a> •
   <a href="#-docker-latex-microservice">Docker TeX Engine</a> •
-  <a href="#-evaluation-matrix">Verification</a> •
+  <a href="#-verification">Verification</a> •
   <a href="#-privacy--security">Privacy</a>
 </p>
 
@@ -25,11 +26,15 @@
 
 ---
 
-## ⚡ What Makes AI Resume Builder Different
+ArqeloCV is an open-source AI resume builder for software engineers.
+
+Production domain: **[https://arqelo.ashutoshtiwari.dev](https://arqelo.ashutoshtiwari.dev)**
+
+## ⚡ What Makes ArqeloCV Different
 
 Most modern AI resume tools suffer from three fatal flaws: they generate fragile multi-column HTML templates that break Applicant Tracking Systems (ATS), they hallucinate fake technical achievements, and they upload sensitive personal career data to cloud databases.
 
-**AI Resume Builder is a compiler-grade, local-first engineering tool:**
+**ArqeloCV is a compiler-grade, local-first engineering tool:**
 
 1. **Deterministic Single-Column LaTeX**: Structured JSON is the resume source of truth. Typeset using canonical single-column TeX templates guaranteed to parse cleanly across every enterprise ATS parser.
 2. **Zero-Hallucination Factuality Guardrails**: Multi-pass AST token validators prevent the AI from inventing unearned technologies, fabricating metrics (e.g. ungrounded `$2.5M revenue` claims), or altering employers and graduation dates.
