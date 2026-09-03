@@ -141,5 +141,40 @@ describe("/api/compile route handler", () => {
       expect(data.success).toBe(false);
       expect(data.errors[0]?.message).toContain("PDF compilation is temporarily unavailable");
     });
+
+    it("sanitizes U+202F narrow no-break spaces before forwarding to compiler", async () => {
+      process.env.LATEX_COMPILER_URL = "https://mock-compiler.run.app";
+      globalThis.fetch = vi.fn().mockResolvedValueOnce({
+        status: 200,
+        ok: true,
+        json: async () => ({
+          success: true,
+          pdf: "JVBERi0xLjQK...",
+          logs: "Output written on main.pdf (1 page).",
+        }),
+      } as unknown as Response);
+
+      const request = new Request("http://localhost/api/compile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          source: "\\begin{document}checkout for 2\u202FM+ weekly users\u200B\\end{document}",
+          engine: "pdflatex",
+        }),
+      });
+
+      const response = await POST(request);
+      expect(response.status).toBe(200);
+      expect(globalThis.fetch).toHaveBeenCalledWith(
+        "https://mock-compiler.run.app/compile",
+        expect.objectContaining({
+          method: "POST",
+          body: JSON.stringify({
+            source: "\\begin{document}checkout for 2 M+ weekly users\\end{document}",
+            engine: "pdflatex",
+          }),
+        })
+      );
+    });
   });
 });

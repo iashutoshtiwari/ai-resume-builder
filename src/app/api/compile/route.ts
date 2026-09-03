@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { sanitizeLatexSource } from "@/features/latex/escape";
 
 export const runtime = "nodejs";
 
@@ -107,7 +108,10 @@ export async function POST(request: Request) {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(parsed.data),
+      body: JSON.stringify({
+        ...parsed.data,
+        source: sanitizeLatexSource(parsed.data.source),
+      }),
       signal: AbortSignal.timeout(45_000),
     });
 

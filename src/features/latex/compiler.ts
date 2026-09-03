@@ -1,3 +1,5 @@
+import { sanitizeLatexSource } from "@/features/latex/escape";
+
 export type CompilerFile = { name: string; content: string | Uint8Array };
 
 export type NormalizedCompilerError = {
@@ -22,6 +24,11 @@ export interface LatexCompiler {
 function normalizeError(message: string, logs: string): NormalizedCompilerError {
   const line = Number(logs.match(/(?:l\.|line\s+)(\d+)/i)?.[1]) || undefined;
   const lower = `${message}\n${logs}`.toLowerCase();
+  if (lower.includes("unicode character")) {
+    const charMatch = logs.match(/Unicode character (.*?) \(U\+([0-9A-Fa-f]+)\)/);
+    const detail = charMatch ? ` (U+${charMatch[2]})` : "";
+    return { code: "latex", message: `Unsupported Unicode character${detail} found in LaTeX document.`, line };
+  }
   if (lower.includes("not found") || lower.includes("missing package")) {
     return { code: "unsupported-package", message: "This document uses a LaTeX package that is not available in the current compiler.", line };
   }
@@ -72,10 +79,12 @@ export class RemoteLatexCompiler implements LatexCompiler {
         return { name: file.name, content: contentStr };
       });
 
+      const cleanSource = sanitizeLatexSource(source);
+
       const response = await fetch("/api/compile", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ source, engine, files: serializedFiles }),
+        body: JSON.stringify({ source: cleanSource, engine, files: serializedFiles }),
       });
 
       const data = await response.json();

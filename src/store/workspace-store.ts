@@ -117,7 +117,14 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => ({
           set({ hydrated: true });
           return;
         }
-        set({ workspace: record?.workspace ?? null, pdfBlob: record?.pdfBlob ?? null, hydrated: true, saveStatus: record ? "saved" : "idle" });
+        let workspace = record?.workspace ?? null;
+        if (workspace && workspace.latexMode === "generated") {
+          workspace = {
+            ...workspace,
+            generatedLatex: renderResumeToLatex(workspace.resume, workspace.presentation),
+          };
+        }
+        set({ workspace, pdfBlob: record?.pdfBlob ?? null, hydrated: true, saveStatus: record ? "saved" : "idle" });
       } catch {
         if (!get().workspace) set({ hydrated: true, saveStatus: "corrupt" });
       } finally {

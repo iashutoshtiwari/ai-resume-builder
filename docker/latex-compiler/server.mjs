@@ -24,6 +24,12 @@ function sendJson(res, statusCode, data) {
   res.end(json);
 }
 
+function sanitizeLatexSource(source) {
+  return source
+    .replace(/[\u200B-\u200D\u200E\u200F\u2060\uFEFF]/g, "")
+    .replace(/[\u00A0\u1680\u2000-\u200A\u202F\u205F\u3000]/g, " ");
+}
+
 function parseLatexErrors(logs) {
   const errors = [];
   const lines = logs.split("\n");
@@ -46,9 +52,20 @@ function parseLatexErrors(logs) {
       }
 
       const lowerMessage = message.toLowerCase();
+      let errorMsg = "We couldn't compile this LaTeX document.";
+      if (lowerMessage.includes("unicode character")) {
+        const charMatch = message.match(/Unicode character (.*?) \(U\+([0-9A-Fa-f]+)\)/);
+        const detail = charMatch ? ` (U+${charMatch[2]})` : "";
+        errorMsg = `Unsupported Unicode character${detail} found in document.`;
+      } else if (lowerMessage.includes("undefined control sequence")) {
+        errorMsg = "There's an invalid LaTeX command in this document.";
+      } else if (lowerMessage.includes("not found")) {
+        errorMsg = "This document uses a LaTeX package or file that isn't available in the current compiler.";
+      }
+
       errors.push({
         code: lowerMessage.includes("file `") && lowerMessage.includes("not found") ? "unsupported-package" : "latex",
-        message: lowerMessage.includes("undefined control sequence") ? "There's an invalid LaTeX command in this document." : lowerMessage.includes("not found") ? "This document uses a LaTeX package or file that isn't available in the current compiler." : "We couldn't compile this LaTeX document.",
+        message: errorMsg,
         line: lineNum,
       });
     }
@@ -127,7 +144,8 @@ async function handleCompile(req, res) {
 
   try {
     // Write primary source file
-    await fs.writeFile(path.join(compileDir, "main.tex"), source, "utf8");
+    const cleanSource = sanitizeLatexSource(source);
+    await fs.writeFile(path.join(compileDir, "main.tex"), cleanSource, "utf8");
 
     // Write auxiliary files (fonts, images, .sty, etc.)
     if (files) {
